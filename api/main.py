@@ -13,6 +13,7 @@ from core.camera import CameraStream
 from core.config import ensure_project_dirs, get_runtime_info, settings
 from core.database import Database
 from core.detector import YOLODetector
+from core.security_rules import SecurityRulesEngine, select_highest_security_event
 from core.tracker import PersonTracker
 from core.video_processor import VideoProcessor
 from workers.exam_worker import mock_exam_events
@@ -25,13 +26,44 @@ DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
 db = Database(settings.database_path)
 camera: CameraStream | None = None
 video_processor: VideoProcessor | None = None
+security_rules_engine: SecurityRulesEngine | None = None
+
+
+def build_security_rules_engine() -> SecurityRulesEngine:
+    return SecurityRulesEngine(
+        rules_enabled=settings.security_rules_enabled,
+        normal_start_hour=settings.security_normal_start_hour,
+        normal_end_hour=settings.security_normal_end_hour,
+        crowding_person_threshold=settings.crowding_person_threshold,
+        loiter_seconds=settings.loiter_seconds,
+        event_cooldown_seconds=settings.security_event_cooldown_seconds,
+        high_risk_cooldown_seconds=settings.security_high_risk_cooldown_seconds,
+        location=settings.security_location,
+    )
+
+
+def create_security_incident_from_event(
+    event: dict,
+    snapshot_path: str | None,
+) -> None:
+    db.create_security_incident(
+        location=event.get("location") or settings.security_location,
+        detected_name=event.get("event_type") or "Track-based event",
+        status_color=event.get("level") or "yellow",
+        confidence=event.get("confidence"),
+        snapshot_path=snapshot_path,
+        instruction=event.get("instruction"),
+        guard_action=None,
+        created_at=event.get("timestamp"),
+    )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global camera, video_processor
+    global camera, video_processor, security_rules_engine
     ensure_project_dirs(settings)
     db.init_db()
+    security_rules_engine = build_security_rules_engine()
     camera = CameraStream(
         settings.camera_source,
         reconnect_seconds=settings.camera_reconnect_seconds,
@@ -61,6 +93,11 @@ async def lifespan(app: FastAPI):
             detection_every_n_frames=settings.detection_every_n_frames,
             enabled=True,
             tracking_enabled=settings.tracking_enabled,
+            security_rules_engine=security_rules_engine,
+            security_incident_writer=create_security_incident_from_event,
+            evidence_dir=settings.evidence_dir,
+            save_security_event_snapshot=settings.security_save_event_snapshot,
+            project_root=PROJECT_ROOT,
         )
 
     yield
@@ -70,6 +107,7 @@ async def lifespan(app: FastAPI):
     if camera is not None:
         camera.release()
         camera = None
+    security_rules_engine = None
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -187,6 +225,99 @@ def tracking_summary() -> dict:
     return video_processor.get_tracking_summary()
 
 
+def security_status_from_events(
+    engine: SecurityRulesEngine,
+    events: list[dict],
+) -> dict:
+    event = select_highest_security_event(events)
+    if event is None:
+        latest_level = "green"
+        latest_event_type = "NORMAL_ACTIVITY"
+        latest_instruction = "Monitor normally."
+        last_event_at = None
+    else:
+        latest_level = event.get("level", "green")
+        latest_event_type = event.get("event_type", "NORMAL_ACTIVITY")
+        latest_instruction = event.get("instruction", "Monitor normally.")
+        last_event_at = event.get("timestamp")
+
+    return {
+        "rules_enabled": engine.rules_enabled,
+        "latest_events": events,
+        "latest_level": latest_level,
+        "latest_event_type": latest_event_type,
+        "latest_instruction": latest_instruction,
+        "last_event_at": last_event_at,
+        "last_evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "cooldowns": engine.get_cooldowns(),
+        **engine.get_config(),
+    }
+
+
+def security_status() -> dict:
+    if video_processor is not None:
+        return video_processor.get_security_status()
+
+    if security_rules_engine is None:
+        return {
+            "rules_enabled": False,
+            "latest_events": [],
+            "latest_level": "green",
+            "latest_event_type": "NORMAL_ACTIVITY",
+            "latest_instruction": "Security rules unavailable.",
+            "last_event_at": None,
+            "last_evaluated_at": None,
+            "cooldowns": {},
+            "normal_start_hour": settings.security_normal_start_hour,
+            "normal_end_hour": settings.security_normal_end_hour,
+            "crowding_person_threshold": settings.crowding_person_threshold,
+            "loiter_seconds": settings.loiter_seconds,
+            "event_cooldown_seconds": settings.security_event_cooldown_seconds,
+            "high_risk_cooldown_seconds": settings.security_high_risk_cooldown_seconds,
+            "location": settings.security_location,
+        }
+
+    security_rules_engine.evaluate(
+        tracking_summary=tracking_summary(),
+        detection_summary=detection_summary(),
+        camera_status=camera_status(),
+    )
+    return security_status_from_events(
+        security_rules_engine,
+        security_rules_engine.get_current_events(),
+    )
+
+
+def normal_security_event() -> dict:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    tracking = tracking_summary()
+    detections = detection_summary()
+    tracks = tracking.get("active_tracks") or []
+    return {
+        "event_type": "NORMAL_ACTIVITY",
+        "level": "green",
+        "title": "Normal activity",
+        "instruction": "Monitor normally.",
+        "confidence": 0.7,
+        "location": settings.security_location,
+        "related_track_ids": [
+            track.get("track_id")
+            for track in tracks
+            if track.get("track_id") is not None
+        ],
+        "evidence": {
+            "active_track_count": tracking.get("active_track_count", len(tracks)),
+            "max_track_age_seconds": max(
+                [float(track.get("age_seconds", 0.0)) for track in tracks] or [0.0]
+            ),
+            "person_count": detections.get("person_count", 0),
+            "phone_count": detections.get("phone_count", 0),
+            "vehicle_count": detections.get("vehicle_count", 0),
+        },
+        "timestamp": timestamp,
+    }
+
+
 def error_frame(message: str = "Camera unavailable") -> bytes:
     frame = VideoProcessor.fallback_frame()
     ok, encoded = cv2.imencode(".jpg", frame)
@@ -261,6 +392,7 @@ async def runtime_status():
         "video_processor": video_status(),
         "detections": detection_summary(),
         "tracking": tracking_summary(),
+        "security_status": security_status(),
     }
 
 
@@ -291,6 +423,24 @@ async def reset_tracking():
     return {
         "reset": True,
         "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/api/security/status")
+async def api_security_status():
+    return security_status()
+
+
+@app.post("/api/security/rules/reset")
+async def reset_security_rules():
+    if video_processor is not None:
+        video_processor.reset_security_rules()
+    elif security_rules_engine is not None:
+        security_rules_engine.reset_cooldowns()
+    return {
+        "reset": True,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "security_status": security_status(),
     }
 
 
@@ -333,21 +483,53 @@ async def video_feed():
     )
 
 
+def websocket_security_payload(event: dict, status: dict) -> dict:
+    level = event.get("level", "green")
+    return {
+        "module": "security",
+        "source": "rules_engine",
+        "event_type": event.get("event_type", "NORMAL_ACTIVITY"),
+        "level": level,
+        "status_color": level,
+        "detected_name": event.get("event_type", "NORMAL_ACTIVITY"),
+        "title": event.get("title", "Normal activity"),
+        "instruction": event.get("instruction", "Monitor normally."),
+        "confidence": event.get("confidence", 0.7),
+        "location": event.get("location", settings.security_location),
+        "related_track_ids": event.get("related_track_ids", []),
+        "evidence": event.get("evidence", {}),
+        "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat()),
+        "detection_summary": detection_summary(),
+        "tracking_summary": tracking_summary(),
+        "security_status": status,
+    }
+
+
 @app.websocket("/ws/security")
 async def websocket_security(websocket: WebSocket):
     await websocket.accept()
     try:
-        async for event in mock_security_events(settings.location, interval=2.0):
-            event["detection_summary"] = detection_summary()
-            event["tracking_summary"] = tracking_summary()
-            db.create_security_incident(
-                location=event["location"],
-                detected_name=event["detected_name"],
-                status_color=event["status_color"],
-                confidence=event["confidence"],
-                instruction=event["instruction"],
-            )
-            await websocket.send_json(event)
+        if security_rules_engine is None or not security_rules_engine.rules_enabled:
+            async for event in mock_security_events(settings.location, interval=2.0):
+                event["detection_summary"] = detection_summary()
+                event["tracking_summary"] = tracking_summary()
+                db.create_security_incident(
+                    location=event["location"],
+                    detected_name=event["detected_name"],
+                    status_color=event["status_color"],
+                    confidence=event["confidence"],
+                    instruction=event["instruction"],
+                )
+                await websocket.send_json(event)
+            return
+
+        while True:
+            status = security_status()
+            event = select_highest_security_event(status.get("latest_events", []))
+            if event is None:
+                event = normal_security_event()
+            await websocket.send_json(websocket_security_payload(event, status))
+            await asyncio.sleep(2.0)
     except WebSocketDisconnect:
         return
 

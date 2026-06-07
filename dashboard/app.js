@@ -39,6 +39,16 @@ function prependEvent(containerId, html) {
   while (container.children.length > 8) container.lastElementChild.remove();
 }
 
+function prependColoredEvent(containerId, html, color) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = `event-row ${colorClass(color)}`;
+  wrapper.innerHTML = html;
+  container.prepend(wrapper);
+  while (container.children.length > 8) container.lastElementChild.remove();
+}
+
 function updateDetectionSummary(summary = {}) {
   setText("detection-persons", summary.person_count ?? 0);
   setText("detection-phones", summary.phone_count ?? 0);
@@ -65,9 +75,11 @@ function updateRuntimeStatus(status = {}) {
   const video = status.video_processor || {};
   const summary = status.detections || video.latest_summary || {};
   const tracking = status.tracking || video.latest_tracking_summary || {};
+  const security = status.security_status || video.security_status || {};
 
   updateDetectionSummary(summary);
   updateTrackingSummary(tracking);
+  updateSecurityStatus(security, summary, tracking);
   setText("diag-camera-source", camera.source || "--");
   setText("diag-camera-opened", camera.is_opened ? "opened" : "not opened");
   setText("diag-source-type", camera.source_type || "--");
@@ -80,6 +92,58 @@ function updateRuntimeStatus(status = {}) {
   setText("diag-inference", video.last_inference_ms == null ? "--" : `${video.last_inference_ms} ms`);
   setText("diag-effective-fps", video.effective_fps ?? "--");
   setText("diag-error", video.model_error || camera.last_error || "Runtime diagnostics ready.");
+}
+
+function securityPriority(level) {
+  return { green: 0, yellow: 1, orange: 2, red: 3 }[colorClass(level)] ?? 0;
+}
+
+function pickSecurityEvent(events = []) {
+  if (!events.length) return null;
+  return events.reduce((best, event) => {
+    if (!best) return event;
+    const eventScore = securityPriority(event.level);
+    const bestScore = securityPriority(best.level);
+    if (eventScore !== bestScore) return eventScore > bestScore ? event : best;
+    if (event.event_type === "HIGH_RISK_COMBINED") return event;
+    return best;
+  }, null);
+}
+
+function formatTrackIds(ids = []) {
+  return ids.length ? ids.map((id) => `ID ${id}`).join(", ") : "--";
+}
+
+function updateSecurityStatus(status = {}, summary = {}, tracking = {}, event = null) {
+  const selected = event || pickSecurityEvent(status.latest_events || []);
+  const evidence = selected?.evidence || {};
+  const level = selected?.level || status.latest_level || "green";
+  const eventType = selected?.event_type || status.latest_event_type || "NORMAL_ACTIVITY";
+  const instruction = selected?.instruction || status.latest_instruction || "Monitor normally.";
+  const relatedTrackIds = selected?.related_track_ids || [];
+  const activeTracks = evidence.active_track_count ?? tracking.active_track_count ?? 0;
+  const phoneCount = evidence.phone_count ?? summary.phone_count ?? 0;
+  const vehicleCount = evidence.vehicle_count ?? summary.vehicle_count ?? 0;
+  const maxTrackAge = Number(evidence.max_track_age_seconds || 0).toFixed(1);
+
+  setStatusCard("security-card", level);
+  setText("security-status", eventType);
+  setText("security-event-type", eventType);
+  setText("security-level", colorClass(level).toUpperCase());
+  setText("security-instruction", instruction);
+  setText("security-location", selected?.location || status.location || "KUET Main Gate");
+  setText("security-confidence", `${Math.round(Number(selected?.confidence || 0) * 100)}%`);
+  setText("security-related-tracks", formatTrackIds(relatedTrackIds));
+  setText("security-active-tracks", activeTracks);
+  setText("security-phones", phoneCount);
+  setText("security-vehicles", vehicleCount);
+  setText("security-crowding-threshold", status.crowding_person_threshold ?? "--");
+  setText("security-loiter-threshold", status.loiter_seconds == null ? "--" : `${status.loiter_seconds}s`);
+  setText("security-after-hours", evidence.after_hours == null ? "--" : evidence.after_hours ? "yes" : "no");
+  setText(
+    "security-evidence-summary",
+    `Tracks ${activeTracks} | max age ${maxTrackAge}s | phones ${phoneCount} | vehicles ${vehicleCount}`
+  );
 }
 
 function updateTrackingSummary(tracking = {}) {
@@ -172,23 +236,45 @@ async function resetTracker() {
   }
 }
 
+async function resetSecurityRules() {
+  setText("security-rule-reset-result", "Resetting rule cooldowns...");
+  try {
+    const response = await fetch("/api/security/rules/reset", { method: "POST" });
+    const result = await response.json();
+    if (result.security_status) updateSecurityStatus(result.security_status);
+    setText("security-rule-reset-result", result.reset ? "Security rule cooldowns reset." : "Security rule reset failed.");
+  } catch {
+    setText("security-rule-reset-result", "Security rules API unavailable");
+  }
+}
+
 function connectSecurity(options = {}) {
   const socket = new WebSocket(wsUrl("/ws/security"));
   socket.onmessage = (message) => {
     const event = JSON.parse(message.data);
-    const color = colorClass(event.status_color);
+    const color = colorClass(event.level || event.status_color);
+    const eventType = event.event_type || event.detected_name;
     setStatusCard(options.cardId || "security-card", color);
-    setText(options.statusId || "security-status", event.detected_name);
+    setText(options.statusId || "security-status", eventType);
     setText(options.instructionId || "security-instruction", event.instruction);
     setText(options.locationId || "security-location", event.location);
     setText(options.confidenceId || "security-confidence", `${Math.round(event.confidence * 100)}%`);
     if (event.detection_summary) updateDetectionSummary(event.detection_summary);
     if (event.tracking_summary) updateTrackingSummary(event.tracking_summary);
+    if (event.security_status) {
+      updateSecurityStatus(
+        event.security_status,
+        event.detection_summary || {},
+        event.tracking_summary || {},
+        event
+      );
+    }
 
-    prependEvent(
+    prependColoredEvent(
       options.listId || "security-events",
-      `<div class="event-meta"><strong>${event.detected_name}</strong>${badge(color)}</div>
-       <span class="muted">${event.instruction} - ${formatTime(event.timestamp)}</span>`
+      `<div class="event-meta"><strong>${eventType}</strong>${badge(color)}</div>
+       <span class="muted">${event.instruction} - ${formatTime(event.timestamp)}</span>`,
+      color
     );
   };
 }

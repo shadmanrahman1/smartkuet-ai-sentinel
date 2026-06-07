@@ -277,6 +277,22 @@ h2 {
   background: rgba(255, 255, 255, 0.025);
 }
 
+.event-row.green {
+  border-color: rgba(22, 163, 74, 0.42);
+}
+
+.event-row.yellow {
+  border-color: rgba(214, 162, 31, 0.5);
+}
+
+.event-row.orange {
+  border-color: rgba(234, 122, 26, 0.52);
+}
+
+.event-row.red {
+  border-color: rgba(220, 38, 38, 0.55);
+}
+
 .event-meta {
   display: flex;
   align-items: center;
@@ -301,6 +317,18 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.status-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-detail {
+  min-height: 66px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
 .notice {
   min-height: 24px;
   margin-top: 12px;
@@ -320,6 +348,7 @@ h2 {
   .diagnostics-grid,
   .diagnostics-grid.two,
   .diagnostics-grid.three,
+  .status-detail-grid,
   .actions,
   .actions.two {
     grid-template-columns: 1fr;

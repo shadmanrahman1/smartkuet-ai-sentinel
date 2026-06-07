@@ -1,4 +1,5 @@
 import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Event, Lock, Thread
@@ -9,7 +10,15 @@ import numpy as np
 
 from core.camera import CameraStream
 from core.detector import YOLODetector
+from core.security_rules import (
+    SecurityRulesEngine,
+    copy_security_events,
+    select_highest_security_event,
+)
 from core.tracker import PersonTracker
+
+
+SecurityIncidentWriter = Callable[[dict[str, Any], str | None], None]
 
 
 class VideoProcessor:
@@ -21,6 +30,11 @@ class VideoProcessor:
         detection_every_n_frames: int = 3,
         enabled: bool = True,
         tracking_enabled: bool = True,
+        security_rules_engine: SecurityRulesEngine | None = None,
+        security_incident_writer: SecurityIncidentWriter | None = None,
+        evidence_dir: str | Path | None = None,
+        save_security_event_snapshot: bool = False,
+        project_root: str | Path | None = None,
     ):
         self.camera = camera
         self.detector = detector
@@ -28,6 +42,11 @@ class VideoProcessor:
         self.detection_every_n_frames = max(1, detection_every_n_frames)
         self.enabled = enabled
         self.tracking_enabled = tracking_enabled and tracker is not None
+        self.security_rules_engine = security_rules_engine
+        self.security_incident_writer = security_incident_writer
+        self.evidence_dir = Path(evidence_dir) if evidence_dir is not None else None
+        self.save_security_event_snapshot = save_security_event_snapshot
+        self.project_root = Path(project_root) if project_root is not None else None
         self.processed_frames = 0
         self.last_inference_ms: float | None = None
         self.avg_inference_ms: float | None = None
@@ -46,6 +65,12 @@ class VideoProcessor:
             enabled=self.tracking_enabled,
             tracker_type=self.tracker.backend if self.tracker is not None else None,
         )
+        self._latest_security_events: list[dict[str, Any]] = []
+        self._latest_security_level = "green"
+        self._latest_security_event_type = "NORMAL_ACTIVITY"
+        self._latest_security_instruction = "Monitor normally."
+        self._last_security_event_at: str | None = None
+        self._last_security_evaluated_at: str | None = None
         self._frame_index = 0
         self._inference_samples: list[float] = []
         self._first_inference_at: float | None = None
@@ -80,6 +105,127 @@ class VideoProcessor:
             "active_tracks": [],
             "error": error,
         }
+
+    def _tracking_summary_snapshot_locked(self) -> dict[str, Any]:
+        summary = dict(self._latest_tracking_summary)
+        summary["active_tracks"] = [
+            dict(track)
+            for track in self._latest_tracking_summary.get("active_tracks", [])
+        ]
+        return summary
+
+    def _camera_status_snapshot(self) -> dict[str, Any]:
+        if hasattr(self.camera, "get_status"):
+            return self.camera.get_status()
+
+        frame = self.camera.latest_frame
+        return {
+            "source": "unknown",
+            "source_type": "unknown",
+            "is_opened": frame is not None,
+            "frame_count": 1 if frame is not None else 0,
+            "width": None,
+            "height": None,
+            "fps_estimate": None,
+            "last_error": None if frame is not None else "Camera status unavailable",
+        }
+
+    def _display_path(self, path: Path) -> str:
+        if self.project_root is not None:
+            try:
+                return str(path.resolve().relative_to(self.project_root.resolve()))
+            except ValueError:
+                pass
+        return str(path)
+
+    @staticmethod
+    def _timestamp_stamp(timestamp: str | None) -> str:
+        if timestamp:
+            try:
+                parsed = datetime.fromisoformat(timestamp)
+                return parsed.strftime("%Y%m%d_%H%M%S")
+            except ValueError:
+                pass
+        return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+    def _save_security_event_frame(
+        self,
+        frame: np.ndarray | None,
+        event: dict[str, Any],
+    ) -> str | None:
+        if self.evidence_dir is None:
+            return None
+
+        stamp = self._timestamp_stamp(event.get("timestamp"))
+        path = self.evidence_dir / f"security_event_{stamp}.jpg"
+        image = frame.copy() if frame is not None else None
+        if image is None:
+            image = self.get_latest_annotated_frame()
+        if image is None:
+            image = self.fallback_frame()
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not cv2.imwrite(str(path), image):
+            return None
+        return self._display_path(path)
+
+    def _record_security_events(
+        self,
+        events: list[dict[str, Any]],
+        frame: np.ndarray | None,
+    ) -> None:
+        if not events:
+            return
+
+        for event in events:
+            if event.get("level") == "green":
+                continue
+
+            snapshot_path = None
+            if self.save_security_event_snapshot:
+                snapshot_path = self._save_security_event_frame(frame, event)
+            event["snapshot_path"] = snapshot_path
+
+            if self.security_incident_writer is not None:
+                self.security_incident_writer(event, snapshot_path)
+
+    def _set_security_status(self, current_events: list[dict[str, Any]]) -> None:
+        event = select_highest_security_event(current_events)
+        if event is None:
+            level = "green"
+            event_type = "NORMAL_ACTIVITY"
+            instruction = "Monitor normally."
+            event_at = self._last_security_event_at
+        else:
+            level = str(event.get("level", "green"))
+            event_type = str(event.get("event_type", "NORMAL_ACTIVITY"))
+            instruction = str(event.get("instruction", "Monitor normally."))
+            event_at = str(event.get("timestamp") or datetime.now(timezone.utc).isoformat())
+
+        with self._lock:
+            self._latest_security_events = copy_security_events(current_events)
+            self._latest_security_level = level
+            self._latest_security_event_type = event_type
+            self._latest_security_instruction = instruction
+            self._last_security_event_at = event_at
+            self._last_security_evaluated_at = datetime.now(timezone.utc).isoformat()
+
+    def _evaluate_security(
+        self,
+        detection_summary: dict[str, Any],
+        tracking_summary: dict[str, Any],
+        frame: np.ndarray | None,
+    ) -> None:
+        if self.security_rules_engine is None:
+            return
+
+        emitted_events = self.security_rules_engine.evaluate(
+            tracking_summary=tracking_summary,
+            detection_summary=detection_summary,
+            camera_status=self._camera_status_snapshot(),
+        )
+        self._record_security_events(emitted_events, frame)
+        self._set_security_status(self.security_rules_engine.get_current_events())
 
     @staticmethod
     def fallback_frame() -> np.ndarray:
@@ -219,8 +365,11 @@ class VideoProcessor:
         while not self._stop.is_set():
             frame = self.camera.latest_frame
             if frame is None:
+                summary = self._empty_summary(error="Waiting for camera frame")
                 with self._lock:
-                    self._latest_summary = self._empty_summary(error="Waiting for camera frame")
+                    self._latest_summary = summary
+                    tracking_snapshot = self._tracking_summary_snapshot_locked()
+                self._evaluate_security(summary, tracking_snapshot, None)
                 time.sleep(0.05)
                 continue
 
@@ -228,12 +377,15 @@ class VideoProcessor:
                 self._latest_raw_frame = frame.copy()
 
             if not self.enabled or self.detector is None:
+                summary = self._empty_summary(
+                    enabled=False,
+                    error="YOLO disabled",
+                )
                 with self._lock:
                     self._latest_annotated_frame = frame.copy()
-                    self._latest_summary = self._empty_summary(
-                        enabled=False,
-                        error="YOLO disabled",
-                    )
+                    self._latest_summary = summary
+                    tracking_snapshot = self._tracking_summary_snapshot_locked()
+                self._evaluate_security(summary, tracking_snapshot, frame)
                 time.sleep(0.03)
                 continue
 
@@ -278,6 +430,9 @@ class VideoProcessor:
             with self._lock:
                 self._latest_annotated_frame = annotated
                 self._latest_summary = summary
+                tracking_snapshot = self._tracking_summary_snapshot_locked()
+
+            self._evaluate_security(summary, tracking_snapshot, annotated)
 
             time.sleep(0.03)
 
@@ -311,12 +466,40 @@ class VideoProcessor:
 
     def get_tracking_summary(self) -> dict[str, Any]:
         with self._lock:
-            summary = dict(self._latest_tracking_summary)
-            summary["active_tracks"] = [
-                dict(track)
-                for track in self._latest_tracking_summary.get("active_tracks", [])
-            ]
-            return summary
+            return self._tracking_summary_snapshot_locked()
+
+    def get_security_status(self) -> dict[str, Any]:
+        if self.security_rules_engine is None:
+            return {
+                "rules_enabled": False,
+                "latest_events": [],
+                "latest_level": "green",
+                "latest_event_type": "NORMAL_ACTIVITY",
+                "latest_instruction": "Security rules unavailable.",
+                "last_event_at": None,
+                "last_evaluated_at": None,
+                "cooldowns": {},
+            }
+
+        with self._lock:
+            latest_events = copy_security_events(self._latest_security_events)
+            latest_level = self._latest_security_level
+            latest_event_type = self._latest_security_event_type
+            latest_instruction = self._latest_security_instruction
+            last_event_at = self._last_security_event_at
+            last_evaluated_at = self._last_security_evaluated_at
+
+        return {
+            "rules_enabled": self.security_rules_engine.rules_enabled,
+            "latest_events": latest_events,
+            "latest_level": latest_level,
+            "latest_event_type": latest_event_type,
+            "latest_instruction": latest_instruction,
+            "last_event_at": last_event_at,
+            "last_evaluated_at": last_evaluated_at,
+            "cooldowns": self.security_rules_engine.get_cooldowns(),
+            **self.security_rules_engine.get_config(),
+        }
 
     def reset_tracker(self) -> None:
         if self.tracker is not None:
@@ -327,6 +510,17 @@ class VideoProcessor:
                 enabled=self.tracking_enabled,
                 tracker_type=self.tracker.backend if self.tracker is not None else None,
             )
+
+    def reset_security_rules(self) -> None:
+        if self.security_rules_engine is not None:
+            self.security_rules_engine.reset_cooldowns()
+        with self._lock:
+            self._latest_security_events = []
+            self._latest_security_level = "green"
+            self._latest_security_event_type = "NORMAL_ACTIVITY"
+            self._latest_security_instruction = "Monitor normally."
+            self._last_security_event_at = None
+            self._last_security_evaluated_at = datetime.now(timezone.utc).isoformat()
 
     def get_status(self) -> dict[str, Any]:
         latest_summary = self.get_latest_summary()
@@ -356,6 +550,7 @@ class VideoProcessor:
             "total_tracks_seen": tracking_summary.get("total_tracks_seen", 0),
             "active_tracks": tracking_summary.get("active_tracks", []),
             "latest_tracking_summary": tracking_summary,
+            "security_status": self.get_security_status(),
             "detector": detector_status,
         }
 

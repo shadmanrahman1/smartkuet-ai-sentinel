@@ -10,9 +10,9 @@
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <span class="eyebrow">YOLO Tracking Foundation</span>
+          <span class="eyebrow">Security Rules Foundation</span>
           <h1>SmartKUET Sentinel - Central Dashboard</h1>
-          <p class="muted">Milestone 1C monitoring with detection, person tracking, diagnostics, and evidence capture.</p>
+          <p class="muted">Milestone 1D monitoring with detection, tracking, security rules, diagnostics, and evidence capture.</p>
         </div>
         <nav class="nav" aria-label="Dashboard pages">
           <a class="button" href="/guard">Guard</a>
@@ -32,6 +32,24 @@
             <p id="security-instruction" class="muted">Connecting to /ws/security</p>
             <p class="muted">Confidence <strong id="security-confidence">--</strong></p>
           </div>
+          <div class="diagnostics-grid two" style="margin-top: 12px">
+            <div class="diagnostic-item">
+              <span class="muted">Current level</span>
+              <strong id="security-level" class="diagnostic-value">GREEN</strong>
+            </div>
+            <div class="diagnostic-item">
+              <span class="muted">Event type</span>
+              <strong id="security-event-type" class="diagnostic-value">NORMAL_ACTIVITY</strong>
+            </div>
+            <div class="diagnostic-item">
+              <span class="muted">Related track IDs</span>
+              <strong id="security-related-tracks" class="diagnostic-value">--</strong>
+            </div>
+            <div class="diagnostic-item">
+              <span class="muted">After-hours</span>
+              <strong id="security-after-hours" class="diagnostic-value">--</strong>
+            </div>
+          </div>
           <div id="security-events" class="events" aria-live="polite"></div>
         </article>
 
@@ -48,6 +66,42 @@
           </div>
           <div id="exam-events" class="events" aria-live="polite"></div>
         </article>
+      </section>
+
+      <section class="panel" style="margin-top: 16px">
+        <div class="panel-header">
+          <h2>Security Rules Panel</h2>
+          <button class="button" type="button" onclick="resetSecurityRules()">Reset Security Rule Cooldowns</button>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-tile">
+            <span class="muted">Active person tracks</span>
+            <strong id="security-active-tracks" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Phones</span>
+            <strong id="security-phones" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Vehicles</span>
+            <strong id="security-vehicles" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Crowding threshold</span>
+            <strong id="security-crowding-threshold" class="summary-value">--</strong>
+          </div>
+        </div>
+        <div class="diagnostics-grid two">
+          <div class="diagnostic-item">
+            <span class="muted">Loiter threshold</span>
+            <strong id="security-loiter-threshold" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Evidence summary</span>
+            <strong id="security-evidence-summary" class="diagnostic-value">Tracks 0 | max age 0.0s | phones 0 | vehicles 0</strong>
+          </div>
+        </div>
+        <p id="security-rule-reset-result" class="notice"></p>
       </section>
 
       <section class="panel" style="margin-top: 16px">

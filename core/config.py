@@ -59,6 +59,15 @@ class Settings:
     track_conf: float
     track_iou: float
     max_track_age_seconds: float
+    security_rules_enabled: bool = True
+    security_normal_start_hour: int = 6
+    security_normal_end_hour: int = 22
+    crowding_person_threshold: int = 4
+    loiter_seconds: float = 15.0
+    security_event_cooldown_seconds: float = 10.0
+    security_high_risk_cooldown_seconds: float = 5.0
+    security_location: str = "KUET Main Gate"
+    security_save_event_snapshot: bool = True
 
 
 def ensure_project_dirs(config: Settings) -> None:
@@ -186,6 +195,24 @@ def load_settings() -> Settings:
         track_conf=float(os.getenv("TRACK_CONF", "0.35")),
         track_iou=float(os.getenv("TRACK_IOU", "0.5")),
         max_track_age_seconds=float(os.getenv("MAX_TRACK_AGE_SECONDS", "5")),
+        security_rules_enabled=_bool(os.getenv("SECURITY_RULES_ENABLED", "true")),
+        security_normal_start_hour=int(os.getenv("SECURITY_NORMAL_START_HOUR", "6")),
+        security_normal_end_hour=int(os.getenv("SECURITY_NORMAL_END_HOUR", "22")),
+        crowding_person_threshold=int(os.getenv("CROWDING_PERSON_THRESHOLD", "4")),
+        loiter_seconds=float(os.getenv("LOITER_SECONDS", "15")),
+        security_event_cooldown_seconds=float(
+            os.getenv("SECURITY_EVENT_COOLDOWN_SECONDS", "10")
+        ),
+        security_high_risk_cooldown_seconds=float(
+            os.getenv("SECURITY_HIGH_RISK_COOLDOWN_SECONDS", "5")
+        ),
+        security_location=os.getenv(
+            "SECURITY_LOCATION",
+            os.getenv("LOCATION", "KUET Main Gate"),
+        ),
+        security_save_event_snapshot=_bool(
+            os.getenv("SECURITY_SAVE_EVENT_SNAPSHOT", "true")
+        ),
     )
     ensure_project_dirs(config)
     return config

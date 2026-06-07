@@ -98,6 +98,7 @@ class Database:
         snapshot_path: str | None = None,
         instruction: str | None = None,
         guard_action: str | None = None,
+        created_at: str | None = None,
     ) -> int:
         with self._connect() as connection:
             cursor = connection.execute(
@@ -116,7 +117,7 @@ class Database:
                     snapshot_path,
                     instruction,
                     guard_action,
-                    utc_now(),
+                    created_at or utc_now(),
                 ),
             )
             return int(cursor.lastrowid)

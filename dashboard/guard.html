@@ -10,9 +10,9 @@
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <span class="eyebrow">Security Worker</span>
+          <span class="eyebrow">Security Rules</span>
           <h1>Guard Interface</h1>
-          <p class="muted">Mobile-first status and local guard actions.</p>
+          <p class="muted">Mobile-first rule status and local guard actions.</p>
         </div>
         <nav class="nav">
           <a class="button" href="/">Dashboard</a>
@@ -28,6 +28,24 @@
             <h2 id="security-status">Waiting for event...</h2>
             <p id="security-instruction">Connecting to /ws/security</p>
             <p class="muted">Confidence <strong id="security-confidence">--</strong></p>
+            <div class="status-detail-grid">
+              <div class="status-detail">
+                <span class="muted">Current level</span>
+                <strong id="security-level" class="diagnostic-value">GREEN</strong>
+              </div>
+              <div class="status-detail">
+                <span class="muted">Event type</span>
+                <strong id="security-event-type" class="diagnostic-value">NORMAL_ACTIVITY</strong>
+              </div>
+              <div class="status-detail">
+                <span class="muted">Related track IDs</span>
+                <strong id="security-related-tracks" class="diagnostic-value">--</strong>
+              </div>
+              <div class="status-detail">
+                <span class="muted">Evidence</span>
+                <strong id="security-evidence-summary" class="diagnostic-value">Tracks 0 | max age 0.0s | phones 0 | vehicles 0</strong>
+              </div>
+            </div>
           </div>
 
           <div class="summary-grid compact">

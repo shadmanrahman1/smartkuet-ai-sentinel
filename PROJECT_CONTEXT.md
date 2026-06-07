@@ -6,12 +6,12 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1C ByteTrack/person tracking foundation
+- Current milestone: Milestone 1D security event rules engine
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
 - Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch.
-- YOLO is now included for object/person detection with runtime diagnostics, evidence capture, and person tracking. No face recognition, InsightFace, MediaPipe, exam behavior scoring, training, or cloud APIs yet.
+- YOLO is now included for object/person detection with runtime diagnostics, evidence capture, person tracking, and deterministic security event rules. No face recognition, InsightFace, MediaPipe, exam behavior scoring, training, or cloud APIs yet.
 
 ## Current Implementation
 
@@ -20,6 +20,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 - SQLite helper lives in `core/database.py`.
 - Camera/video abstraction lives in `core/camera.py`.
 - YOLO detector wrapper lives in `core/detector.py`.
+- Security event rules live in `core/security_rules.py`.
 - Camera plus detector background processing lives in `core/video_processor.py`.
 - Person tracking lives in `core/tracker.py`; current backend is `iou_fallback` while `TRACKER_TYPE=bytetrack` remains the requested/default config.
 - Mock security worker lives in `workers/security_worker.py`.
@@ -31,9 +32,10 @@ This file is the running Codex work log for this project. Each time Codex works 
 - Project-local cache paths are set for pip, Python bytecode, Ultralytics, Torch, XDG cache, and Matplotlib.
 - Runtime diagnostics are available at `/api/runtime/status`, `/api/camera/status`, and `/api/video/status`.
 - Tracking status is available at `/api/tracking/latest`; tracker reset is available at `POST /api/tracking/reset`.
+- Security rules status is available at `/api/security/status`; rule cooldown reset is available at `POST /api/security/rules/reset`.
 - Evidence snapshots are saved through `POST /api/evidence/snapshot` into `snapshots/evidence/`.
 - Runtime check script: `python scripts/check_runtime.py`.
-- YOLO benchmark script: `python scripts/benchmark_yolo.py --source sample_videos/demo.mp4 --seconds 20`.
+- YOLO benchmark script: `python scripts/benchmark_yolo.py --source sample_videos/demo.mp4 --seconds 20`; it now includes tracking and security-rule metrics.
 - Standing cleanup rule: after Codex finishes project work, stop SmartKUET Uvicorn/Python server processes and verify SmartKUET ports such as `8001` and `8002` no longer respond, unless the user explicitly asks to leave the server running.
 
 ## Work Log
@@ -209,3 +211,47 @@ Initialized Git for the local project and pushed it to GitHub.
 - Ignored `.venv/`, `.cache/`, `.pytest_cache/`, `smartkuet.db`, `models/yolov8n.pt`, generated benchmark JSON, generated evidence snapshots, and future generated run outputs.
 - Created initial commit `787f778` with message `Initial SmartKUET Sentinel implementation`.
 - Pushed `main` to `origin/main`.
+
+### 2026-06-07 - Milestone 1D Security Event Rules Engine
+
+Added deterministic security event rules using real detection, tracking, camera, and time signals.
+
+- Added `core/security_rules.py` with `SecurityEvent`, `SecurityRulesEngine`, cooldown reset/status helpers, event copying, and highest-level event selection.
+- Added rules for `NORMAL_ACTIVITY`, `CROWDING`, `LOITERING`, `PHONE_VISIBLE_AT_GATE`, `VEHICLE_NEAR_ENTRY`, `CAMERA_UNAVAILABLE`, `AFTER_HOURS_ACTIVITY`, and `HIGH_RISK_COMBINED`.
+- Added security rule config in `core/config.py` and `.env.example`: `SECURITY_RULES_ENABLED`, normal hours, crowding threshold, loiter threshold, event cooldowns, security location, and snapshot toggle.
+- Integrated the rules engine into `core/video_processor.py` so the background loop evaluates security status after camera, detection, and tracking updates.
+- Added yellow/orange/red incident logging to the existing SQLite `security_incidents` table through the existing DB schema.
+- Added optional generated event snapshots under `snapshots/evidence/security_event_YYYYMMDD_HHMMSS.jpg`.
+- Added `get_security_status()` and `reset_security_rules()` to the video processor.
+- Updated `api/main.py` with `GET /api/security/status`, `POST /api/security/rules/reset`, security status inside `/api/runtime/status`, and rules-engine security websocket payloads.
+- Kept the old mock security websocket path only as fallback when the rules engine is unavailable or disabled.
+- Updated the central dashboard with a Security Rules Panel showing current level, event type, instruction, related track IDs, active tracks, phones, vehicles, thresholds, after-hours state, evidence summary, recent color-coded events, and a cooldown reset button.
+- Updated the guard page to prioritize the real rule instruction, event type, level, related track IDs, and evidence summary while keeping local ALLOW, DENY, and VERIFY ID actions.
+- Extended `scripts/benchmark_yolo.py` with security metrics: `security_rules_enabled`, `event_count_by_type`, `event_count_by_level`, `total_security_events`, and `highest_level_seen`.
+- Extended `scripts/check_runtime.py` with security rule configuration output.
+- Updated `README.md` with Milestone 1D scope, rule descriptions, new endpoints, controls, benchmark metrics, troubleshooting, and next milestone guidance.
+- Added tests for rule behavior, cooldowns, `/api/security/status`, `/api/security/rules/reset`, and `/api/runtime/status` security shape.
+
+Tests and diagnostics:
+
+- `pytest`: `29 passed, 1 warning`.
+- `python scripts/check_runtime.py` confirmed Python `3.13.5`, OpenCV `4.13.0`, Torch `2.12.0+cpu`, CUDA unavailable, Ultralytics available, YOLO model exists, tracking config, security config, and all project runtime directories exist.
+- `python scripts/benchmark_yolo.py --source sample_videos\demo.mp4 --seconds 2` handled the missing sample video gracefully, wrote a JSON report under `runs/benchmarks/`, included security metrics, and reported `Could not open source`.
+- Fresh Uvicorn verification succeeded on `http://127.0.0.1:8002` with `CAMERA_SOURCE=tests/no-camera.mp4` for deterministic no-camera checks.
+- `/health` returned `{"status":"ok","app":"SmartKUET Sentinel"}`.
+- `/api/security/status` returned `rules_enabled=true`, `latest_level=red`, `latest_event_type=HIGH_RISK_COMBINED`, and instruction `Escalate to the security supervisor.` because the test camera source was unavailable.
+- `/api/security/status` also returned `CAMERA_UNAVAILABLE` and `HIGH_RISK_COMBINED` events with evidence showing `camera_is_opened=false`, `camera_frame_count=0`, zero tracks, zero phones, and zero vehicles.
+- `/api/runtime/status` included `security_status` with the same red high-risk camera-unavailable state.
+- `POST /api/security/rules/reset` returned `{"reset": true, ...}`.
+- `/`, `/guard`, `/exam`, `/dashboard/app.js`, and `/dashboard/styles.css` returned `200`.
+- After verification, the temporary SmartKUET server was stopped and both `http://127.0.0.1:8001/health` and `http://127.0.0.1:8002/health` no longer responded.
+
+Known limitations:
+
+- The rules depend on current YOLO detections, temporary track IDs, and camera availability; they do not identify people.
+- Current tracker backend is still `iou_fallback`, not full Ultralytics ByteTrack integration.
+- No face recognition, InsightFace, MediaPipe, exam behavior scoring, model training, or cloud APIs were added.
+- Torch is still CPU-only, so RTX 3050 acceleration is not active.
+- No `sample_videos/demo.mp4` exists yet, so video-file benchmark still reports `Could not open source`.
+- Security thresholds are defaults and should be tuned with real KUET gate footage.
+- Next recommended milestone: Milestone 1E, validate with a real local CCTV/sample video and tune thresholds before identity features.

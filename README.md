@@ -1,19 +1,23 @@
 # SmartKUET Sentinel
 
-SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is Milestone 1C: person tracking on top of the YOLO detection, stable video input, diagnostics, benchmarking, and evidence capture foundation.
+SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is Milestone 1D: security event rules on top of YOLO detection, person tracking, stable video input, diagnostics, benchmarking, and evidence capture.
 
-## Milestone 1C Scope
+## Milestone 1D Scope
 
-- FastAPI app with dashboard, health, database, MJPEG, WebSocket, detection, tracking, camera, video, runtime, and evidence routes.
+- FastAPI app with dashboard, health, database, MJPEG, WebSocket, detection, tracking, security rules, camera, video, runtime, and evidence routes.
 - Robust OpenCV camera input for webcam index, local video files, phone/IP camera URLs, and RTSP/CCTV URLs.
 - Lazy Ultralytics YOLO detector using `models/yolov8n.pt` by default.
 - Person-only tracking with temporary track IDs.
 - IoU fallback tracker backend exposed as `iou_fallback`.
 - Tracking summary at `/api/tracking/latest`.
 - Tracker reset at `POST /api/tracking/reset`.
+- Security rules status at `/api/security/status`.
+- Security rule cooldown reset at `POST /api/security/rules/reset`.
+- Rule-generated yellow, orange, and red incidents saved to the existing SQLite `security_incidents` table.
+- Optional security event snapshots saved to `snapshots/evidence/`.
 - Runtime diagnostics for Python, OpenCV, Torch, CUDA, Ultralytics, camera state, inference time, effective FPS, and tracking state.
 - Evidence snapshot capture to `snapshots/evidence/`.
-- YOLO benchmark script with tracking metrics written to `runs/benchmarks/`.
+- YOLO benchmark script with tracking and security-rule metrics written to `runs/benchmarks/`.
 
 ## Detection vs Tracking
 
@@ -23,6 +27,21 @@ Tracking answers: which detected person appears to be the same temporary subject
 
 Tracking does **not** identify a person. It only assigns short-lived track IDs such as `ID 3` while a person remains visible. Face recognition is intentionally not implemented yet.
 
+## Security Rules
+
+The rules engine is deterministic and uses current tracking, detection, camera, and time signals:
+
+- `NORMAL_ACTIVITY`: active persons with no concerning cue.
+- `CROWDING`: active person tracks reach `CROWDING_PERSON_THRESHOLD`.
+- `LOITERING`: a track age reaches `LOITER_SECONDS`.
+- `PHONE_VISIBLE_AT_GATE`: YOLO reports a phone.
+- `VEHICLE_NEAR_ENTRY`: YOLO reports a vehicle.
+- `CAMERA_UNAVAILABLE`: camera is not opened or has no frames.
+- `AFTER_HOURS_ACTIVITY`: people are visible outside configured normal hours.
+- `HIGH_RISK_COMBINED`: after-hours crowding, after-hours loitering, or camera issue.
+
+Yellow, orange, and red rule events can create DB incidents and evidence snapshots. Green normal events are displayed but not stored as incidents.
+
 ## Intentionally Not Implemented Yet
 
 - Face recognition or face embeddings.
@@ -31,7 +50,6 @@ Tracking does **not** identify a person. It only assigns short-lived track IDs s
 - Real exam behavior scoring.
 - Model training.
 - Cloud services or external runtime APIs.
-- Security event rules from tracking and object cues.
 
 ## Hardware Target
 
@@ -51,6 +69,20 @@ python -m pip install --cache-dir .\.cache\pip -r requirements.txt
 ```
 
 Copy `.env.example` to `.env` only if you need to change defaults.
+
+Common security rule settings:
+
+```txt
+SECURITY_RULES_ENABLED=true
+SECURITY_NORMAL_START_HOUR=6
+SECURITY_NORMAL_END_HOUR=22
+CROWDING_PERSON_THRESHOLD=4
+LOITER_SECONDS=15
+SECURITY_EVENT_COOLDOWN_SECONDS=10
+SECURITY_HIGH_RISK_COOLDOWN_SECONDS=5
+SECURITY_LOCATION=KUET Main Gate
+SECURITY_SAVE_EVENT_SNAPSHOT=true
+```
 
 ## Video Sources
 
@@ -96,6 +128,7 @@ Open:
 - http://127.0.0.1:8002/exam
 - http://127.0.0.1:8002/api/runtime/status
 - http://127.0.0.1:8002/api/tracking/latest
+- http://127.0.0.1:8002/api/security/status
 
 ## Tracking Controls
 
@@ -106,6 +139,16 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8002/api/tracking/reset
 ```
 
 The central dashboard also has a `Reset Tracker` button.
+
+## Security Rule Controls
+
+Reset rule cooldowns:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8002/api/security/rules/reset
+```
+
+The central dashboard also has a `Reset Security Rule Cooldowns` button.
 
 ## Evidence Snapshot
 
@@ -125,7 +168,7 @@ Snapshots are saved to `snapshots/evidence/` when a live frame is available.
 python scripts/check_runtime.py
 ```
 
-This reports Python, OpenCV, Torch, CUDA, Ultralytics, YOLO model, tracking config, and local runtime directory status.
+This reports Python, OpenCV, Torch, CUDA, Ultralytics, YOLO model, tracking config, security rule config, and local runtime directory status.
 
 ## YOLO Benchmark
 
@@ -134,7 +177,7 @@ python scripts/benchmark_yolo.py --source sample_videos/demo.mp4 --seconds 20
 python scripts/benchmark_yolo.py --source 0 --seconds 20
 ```
 
-Reports are saved to `runs/benchmarks/` and include average active tracks, max active tracks, and total tracks seen. CPU-only Torch works, but expect lower FPS than a CUDA-enabled Torch build.
+Reports are saved to `runs/benchmarks/` and include average active tracks, max active tracks, total tracks seen, event counts by type, event counts by level, total security events, and highest level seen. CPU-only Torch works, but expect lower FPS than a CUDA-enabled Torch build.
 
 ## Test
 
@@ -164,4 +207,10 @@ Tracking unavailable:
 - The current backend is `iou_fallback`, which is simple and CPU-friendly.
 - Temporary IDs can change when people leave the frame, overlap heavily, or the camera feed drops.
 
-Next recommended milestone: Milestone 1D, security event logic from tracking and object cues. Face recognition should wait until tracking and event rules are stable.
+Security rules not firing:
+
+- Confirm `SECURITY_RULES_ENABLED=true`.
+- Check `/api/security/status` for current level, instruction, cooldowns, thresholds, and evidence values.
+- Use `POST /api/security/rules/reset` if a repeated condition is intentionally under cooldown.
+
+Next recommended milestone: Milestone 1E, validate the rules with a real local CCTV/sample video and tune thresholds before adding identity features. Face recognition should still wait.

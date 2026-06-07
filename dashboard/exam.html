@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Examiner Page</title>
+    <link rel="stylesheet" href="/dashboard/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="eyebrow">Exam Worker</span>
+          <h1>Examiner Page</h1>
+          <p class="muted">Mock suspicion scoring and examiner review controls.</p>
+        </div>
+        <nav class="nav">
+          <a class="button" href="/">Dashboard</a>
+          <a class="button" href="/guard">Guard</a>
+        </nav>
+      </header>
+
+      <section class="grid">
+        <article class="panel">
+          <div id="exam-card" class="status-card large green">
+            <span class="badge green">exam</span>
+            <p class="muted">Seat <strong id="exam-seat">--</strong></p>
+            <h2 id="exam-status">Waiting for event...</h2>
+            <div class="metric" id="exam-score">0.0</div>
+            <p class="muted">Score change <strong id="exam-added">+0.0</strong></p>
+          </div>
+          <div class="actions two">
+            <button class="button green" onclick="localAction('Examiner action recorded locally: cleared false positive')">Clear false positive</button>
+            <button class="button yellow" onclick="localAction('Examiner action recorded locally: marked for review')">Mark for review</button>
+          </div>
+          <p id="local-action" class="notice"></p>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Recent Behaviors</h2>
+            <span class="muted">Live</span>
+          </div>
+          <div id="exam-events" class="events" aria-live="polite"></div>
+        </article>
+      </section>
+    </main>
+
+    <script src="/dashboard/app.js"></script>
+    <script>
+      connectExam();
+    </script>
+  </body>
+</html>

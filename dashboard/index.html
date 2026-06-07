@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SmartKUET Sentinel - Central Dashboard</title>
+    <link rel="stylesheet" href="/dashboard/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="eyebrow">YOLO Tracking Foundation</span>
+          <h1>SmartKUET Sentinel - Central Dashboard</h1>
+          <p class="muted">Milestone 1C monitoring with detection, person tracking, diagnostics, and evidence capture.</p>
+        </div>
+        <nav class="nav" aria-label="Dashboard pages">
+          <a class="button" href="/guard">Guard</a>
+          <a class="button" href="/exam">Examiner</a>
+        </nav>
+      </header>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Security Live Status</h2>
+            <span id="security-location" class="muted">KUET Main Gate</span>
+          </div>
+          <div id="security-card" class="status-card green">
+            <span class="badge green">security</span>
+            <h3 id="security-status">Waiting for event...</h3>
+            <p id="security-instruction" class="muted">Connecting to /ws/security</p>
+            <p class="muted">Confidence <strong id="security-confidence">--</strong></p>
+          </div>
+          <div id="security-events" class="events" aria-live="polite"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Exam Integrity Status</h2>
+            <span class="muted">Mock Worker</span>
+          </div>
+          <div id="exam-card" class="status-card green">
+            <span class="badge green">exam</span>
+            <h3 id="exam-status">Waiting for event...</h3>
+            <p class="muted">Seat <strong id="exam-seat">--</strong></p>
+            <p class="muted">Score <strong id="exam-score">0.0</strong> <span id="exam-added">+0.0</span></p>
+          </div>
+          <div id="exam-events" class="events" aria-live="polite"></div>
+        </article>
+      </section>
+
+      <section class="panel" style="margin-top: 16px">
+        <div class="panel-header">
+          <h2>YOLO Detection Pipeline</h2>
+          <span id="detection-status" class="muted">Checking model status...</span>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-tile">
+            <span class="muted">Persons</span>
+            <strong id="detection-persons" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Phones</span>
+            <strong id="detection-phones" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Vehicles</span>
+            <strong id="detection-vehicles" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Total objects</span>
+            <strong id="detection-total" class="summary-value">0</strong>
+          </div>
+        </div>
+        <p id="detection-error" class="muted" style="margin-bottom: 12px">Waiting for detection summary...</p>
+        <img class="feed" src="/api/video_feed" alt="Live camera stream" />
+      </section>
+
+      <section class="panel" style="margin-top: 16px">
+        <div class="panel-header">
+          <h2>Person Tracking</h2>
+          <button class="button" type="button" onclick="resetTracker()">Reset Tracker</button>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-tile">
+            <span class="muted">Tracking</span>
+            <strong id="tracking-enabled" class="summary-value">--</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Tracker type</span>
+            <strong id="tracking-type" class="summary-value">--</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Active persons</span>
+            <strong id="tracking-active" class="summary-value">0</strong>
+          </div>
+          <div class="summary-tile">
+            <span class="muted">Unique tracks</span>
+            <strong id="tracking-total" class="summary-value">0</strong>
+          </div>
+        </div>
+        <p id="tracking-error" class="muted" style="margin-bottom: 12px">Waiting for tracking status...</p>
+        <div id="tracking-list" class="events" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" style="margin-top: 16px">
+        <div class="panel-header">
+          <h2>Runtime Diagnostics</h2>
+          <button class="button" type="button" onclick="saveEvidenceSnapshot()">Save Evidence Snapshot</button>
+        </div>
+        <div class="diagnostics-grid">
+          <div class="diagnostic-item">
+            <span class="muted">Camera source</span>
+            <strong id="diag-camera-source" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Camera status</span>
+            <strong id="diag-camera-opened" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Source type</span>
+            <strong id="diag-source-type" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Resolution</span>
+            <strong id="diag-resolution" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">YOLO status</span>
+            <strong id="diag-yolo-status" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Requested device</span>
+            <strong id="diag-requested-device" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Selected device</span>
+            <strong id="diag-selected-device" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">CUDA available</span>
+            <strong id="diag-cuda" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Camera FPS</span>
+            <strong id="diag-camera-fps" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Last inference</span>
+            <strong id="diag-inference" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Effective FPS</span>
+            <strong id="diag-effective-fps" class="diagnostic-value">--</strong>
+          </div>
+          <div class="diagnostic-item">
+            <span class="muted">Status</span>
+            <strong id="diag-error" class="diagnostic-value">--</strong>
+          </div>
+        </div>
+        <p id="snapshot-result" class="notice"></p>
+      </section>
+    </main>
+
+    <script src="/dashboard/app.js"></script>
+    <script>
+      connectSecurity();
+      connectExam();
+      pollRuntimeStatus();
+    </script>
+  </body>
+</html>

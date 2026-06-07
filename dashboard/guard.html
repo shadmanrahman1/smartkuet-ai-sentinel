@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guard Interface</title>
+    <link rel="stylesheet" href="/dashboard/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="eyebrow">Security Worker</span>
+          <h1>Guard Interface</h1>
+          <p class="muted">Mobile-first status and local guard actions.</p>
+        </div>
+        <nav class="nav">
+          <a class="button" href="/">Dashboard</a>
+          <a class="button" href="/exam">Examiner</a>
+        </nav>
+      </header>
+
+      <section class="grid single">
+        <article class="panel">
+          <div id="security-card" class="status-card large green">
+            <span class="badge green">security</span>
+            <p class="muted" id="security-location">KUET Main Gate</p>
+            <h2 id="security-status">Waiting for event...</h2>
+            <p id="security-instruction">Connecting to /ws/security</p>
+            <p class="muted">Confidence <strong id="security-confidence">--</strong></p>
+          </div>
+
+          <div class="summary-grid compact">
+            <div class="summary-tile">
+              <span class="muted">Persons</span>
+              <strong id="detection-persons" class="summary-value">0</strong>
+            </div>
+            <div class="summary-tile">
+              <span class="muted">Phones</span>
+              <strong id="detection-phones" class="summary-value">0</strong>
+            </div>
+            <div class="summary-tile">
+              <span class="muted">Vehicles</span>
+              <strong id="detection-vehicles" class="summary-value">0</strong>
+            </div>
+          </div>
+          <p id="detection-status" class="notice">Checking YOLO status...</p>
+          <p id="detection-error" class="muted"></p>
+
+          <div class="diagnostics-grid three" style="margin-top: 16px">
+            <div class="diagnostic-item">
+              <span class="muted">Camera</span>
+              <strong id="diag-camera-opened" class="diagnostic-value">--</strong>
+            </div>
+            <div class="diagnostic-item">
+              <span class="muted">YOLO device</span>
+              <strong id="diag-selected-device" class="diagnostic-value">--</strong>
+            </div>
+            <div class="diagnostic-item">
+              <span class="muted">FPS</span>
+              <strong id="diag-effective-fps" class="diagnostic-value">--</strong>
+            </div>
+          </div>
+
+          <div class="diagnostics-grid two" style="margin-top: 10px">
+            <div class="diagnostic-item">
+              <span class="muted">Tracked persons</span>
+              <strong id="guard-track-count" class="diagnostic-value">0</strong>
+            </div>
+            <div class="diagnostic-item">
+              <span class="muted">Track IDs</span>
+              <strong id="guard-track-ids" class="diagnostic-value">--</strong>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="button green" onclick="localAction('Guard action recorded locally: ALLOW')">ALLOW</button>
+            <button class="button red" onclick="localAction('Guard action recorded locally: DENY')">DENY</button>
+            <button class="button yellow" onclick="localAction('Guard action recorded locally: VERIFY ID')">VERIFY ID</button>
+          </div>
+          <p id="local-action" class="notice"></p>
+        </article>
+      </section>
+    </main>
+
+    <script src="/dashboard/app.js"></script>
+    <script>
+      connectSecurity();
+      pollRuntimeStatus();
+    </script>
+  </body>
+</html>

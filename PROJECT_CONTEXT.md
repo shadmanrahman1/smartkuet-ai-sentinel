@@ -198,3 +198,14 @@ Known limitations:
 - No `sample_videos/demo.mp4` exists yet, so video-file benchmark still reports `Could not open source`.
 - Live webcam verification produced zero active tracks because no person detections were present.
 - Next recommended milestone: Milestone 1D, security event logic from tracking plus object cues. Face recognition should still wait.
+
+### 2026-06-07 - Git Repository Initialized and Published
+
+Initialized Git for the local project and pushed it to GitHub.
+
+- Ran `git init` and set the branch to `main`.
+- Added remote `origin` as `https://github.com/shadmanrahman1/smartkuet-ai-sentinel.git`.
+- Tightened `.gitignore` before staging so generated runtime files stay out of version control.
+- Ignored `.venv/`, `.cache/`, `.pytest_cache/`, `smartkuet.db`, `models/yolov8n.pt`, generated benchmark JSON, generated evidence snapshots, and future generated run outputs.
+- Created initial commit `787f778` with message `Initial SmartKUET Sentinel implementation`.
+- Pushed `main` to `origin/main`.

@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1G Demo UI and Submission Screenshot Polish
+- Current milestone: Milestone 1H Final Submission Asset Pack
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
@@ -319,4 +319,29 @@ Known limitations:
 Next recommended milestone:
 
 - Milestone 1H: Final Submission Asset Pack — screenshots, demo summary, proposal PDF/README polish, and final repository cleanup.
+
+### 2026-06-11 - Milestone 1H Final Submission Asset Pack
+
+Prepared and structured the final submission-ready documentation pack for the KUET innovation competition.
+
+- Created [docs/final_submission_pack.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/final_submission_pack.md) as the central repository details, features list, validation highlights, and privacy checklists document.
+- Created [docs/demo_script.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_script.md) as the presenter speech guide for a 2.5-minute video pitch.
+- Created [docs/judges_qna.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/judges_qna.md) detailing typical competition questions and offline/privacy answers.
+- Created [docs/technical_architecture.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/technical_architecture.md) featuring layers analysis and a system Mermaid diagram.
+- Updated [README.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/README.md) to link directly to all documentation assets under the "Final Submission Pack" section.
+- Added tests in [tests/test_submission_docs_exist.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_submission_docs_exist.py).
+
+Tests and diagnostics:
+
+- `pytest` passed 42 tests successfully (2 new submission document verification tests added).
+- Verified `print_demo_checklist.py` and `check_runtime.py` output correct configurations and model files.
+
+Known limitations:
+
+- YOLO inference runs on CPU by default.
+- Candidate suspicion scores and student identity checks are concept mock layouts.
+
+Next recommended milestone:
+
+- Milestone 1I: Final Repository QA and Optional Screenshot Capture.
 

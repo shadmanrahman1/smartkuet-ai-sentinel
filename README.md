@@ -252,12 +252,16 @@ To protect the privacy of campus members and ensure professional standards:
 * **Consented Local Footage**: For the final project submission or live presentation, we strongly recommend recording your own local gate footage with consented participants.
 * **Temporary Track IDs**: Remember that track IDs (like `ID 1`, `ID 2`) are temporary indicators to trace motion across adjacent frames and do not represent student identity or permanent profiles.
 
-## Demo and Submission Assets
+## Final Submission Pack
 
-The following documents support the evaluation and recording of this innovation submission:
-* **Demo Runbook**: [docs/demo_runbook.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_runbook.md) — Setup checks, verification, and screenshot guides.
-* **Submission Pitch**: [docs/submission_pitch.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/submission_pitch.md) — Project problem, proposed solution, current features, and future plans.
-* **Privacy & Video Attributions**: [sample_videos/ATTRIBUTION.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/sample_videos/ATTRIBUTION.md) — Open source dataset licensing information.
+The following documents compile the pitch, design, runbooks, and checklists for the KUET innovation submission:
+* **Final Submission Pack**: [docs/final_submission_pack.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/final_submission_pack.md) — Implemented features, validation results, and checklists.
+* **Spoken Demo Script**: [docs/demo_script.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_script.md) — Presenter script for a 2.5-minute pitch video.
+* **Judges Q&A Prep**: [docs/judges_qna.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/judges_qna.md) — Anticipated questions and strong responses.
+* **Technical Architecture**: [docs/technical_architecture.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/technical_architecture.md) — System flow diagram and architectural layers.
+* **Demo Runbook**: [docs/demo_runbook.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_runbook.md) — Developer checklists, run commands, and screenshot guides.
+* **Submission Pitch**: [docs/submission_pitch.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/submission_pitch.md) — Innovation concept proposal detail.
+* **Video Attributions**: [sample_videos/ATTRIBUTION.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/sample_videos/ATTRIBUTION.md) — Dataset licenses and privacy standards.
 
 ## Next Recommended Milestone
-Milestone 2A: Face detection and enrollment database foundation. Face recognition and student identification should still wait.
+Milestone 1H: Final Submission Asset Pack — screenshots, demo summary, proposal PDF/README polish, and final repository cleanup.

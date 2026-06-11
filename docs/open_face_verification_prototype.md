@@ -107,12 +107,38 @@ Guard Decision Panel (Human decides gate action)
 ## InsightFace — Engine Details
 
 - **Library**: `insightface==1.0.1` (MIT licensed code, non-commercial model weights)
-- **Model pack**: `buffalo_s` (small, fast, ~80MB, downloads on first run to `.cache/insightface/`)
+- **Model pack**: `buffalo_s` (small, fast, ~80MB, downloads on first run)
 - **Detector**: RetinaFace — robust, handles pose/scale variation
 - **Recogniser**: ArcFace — 512-dim embedding, cosine similarity
 - **Inference**: ONNX Runtime (`onnxruntime==1.26.0`) — GPU or CPU fallback
 - **Model licence**: InsightFace pretrained models are for non-commercial research use.
   This is acceptable for a university academic project prototype.
+
+### Cache Location Enforcement
+
+> **Project rule**: All runtime/model/cache artifacts must stay inside
+> `F:\Skill_WORK\CODE\SMART_KUET_Innovative`. Nothing goes to `C:\Users\`.
+
+InsightFace uses the `INSIGHTFACE_HOME` environment variable to determine where to
+download and cache model files. By default it writes to `~/.insightface/` (user home on C:).
+
+**We override this in two places:**
+
+1. **`core/face_verification.py` (module level)** — sets `INSIGHTFACE_HOME` via
+   `os.environ.setdefault(...)` *before* any `import insightface`. This is the primary
+   enforcement mechanism; it runs automatically on every API startup.
+
+2. **`scripts/local_env.ps1`** — sets `$env:INSIGHTFACE_HOME` at the PowerShell session
+   level for full shell-level enforcement when running server or scripts manually.
+
+After the fix, model files load from:
+```
+F:\Skill_WORK\CODE\SMART_KUET_Innovative\.cache\insightface\models\buffalo_s\
+```
+Not from `C:\Users\USER\.insightface\`.
+
+The `.cache\` directory is gitignored, so model weights are never committed.
+
 
 ---
 

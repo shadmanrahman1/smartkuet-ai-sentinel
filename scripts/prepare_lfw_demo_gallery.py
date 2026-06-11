@@ -29,11 +29,12 @@ os.environ.setdefault("ULTRALYTICS_CONFIG_DIR", str(PROJECT_ROOT / ".cache" / "u
 from core.config import settings  # noqa: E402
 
 import shutil
-import numpy as np
 
 
 GALLERY_DIR    = settings.face_gallery_dir
 DATASET_DIR    = settings.data_dir / "face_datasets" / "lfw"
+LFW_HOME       = DATASET_DIR / "lfw_home"
+LFW_FUNNELED   = LFW_HOME / "lfw_funneled"     # 250×250 full-res face images
 NUM_MEMBERS    = 3       # number of demo identities to enroll
 IMAGES_EACH    = 3       # images per demo member (used for enrollment)
 MIN_FACES      = 8       # minimum LFW images required per identity
@@ -41,70 +42,70 @@ MEMBER_LABELS  = ["DemoMemberA", "DemoMemberB", "DemoMemberC",
                    "DemoMemberD", "DemoMemberE"]
 
 
-def fetch_lfw(data_home: Path):
-    print(f"Fetching LFW dataset (min_faces_per_person={MIN_FACES}) ...")
+def fetch_lfw(data_home: Path) -> None:
+    """Download LFW dataset via sklearn if not already present."""
+    if LFW_FUNNELED.exists() and any(LFW_FUNNELED.iterdir()):
+        print(f"LFW already downloaded at: {LFW_FUNNELED}")
+        return
+
+    print(f"Fetching LFW dataset ...")
     print(f"  Download/cache dir: {data_home}")
     print("  This may take a few minutes on first run (~200MB).\n")
 
     from sklearn.datasets import fetch_lfw_people
-
-    lfw = fetch_lfw_people(
+    # resize=1.0 to trigger full download; we use lfw_funneled dir directly
+    fetch_lfw_people(
         data_home=str(data_home),
         min_faces_per_person=MIN_FACES,
-        resize=0.5,
+        resize=1.0,
         color=True,
     )
-    return lfw
 
 
-def save_gallery(lfw, gallery_dir: Path) -> dict[str, str]:
+def pick_identities(lfw_funneled_dir: Path) -> list[tuple[str, list[Path]]]:
     """
-    Select NUM_MEMBERS identities, save IMAGES_EACH images each to gallery.
+    Pick NUM_MEMBERS identities from lfw_funneled with at least MIN_FACES images.
+    Returns list of (real_name, [image_paths]).
+    """
+    candidates = []
+    for person_dir in sorted(lfw_funneled_dir.iterdir()):
+        if not person_dir.is_dir():
+            continue
+        imgs = sorted(person_dir.glob("*.jpg"))
+        if len(imgs) >= MIN_FACES:
+            candidates.append((person_dir.name, imgs))
+
+    # Sort by most images (most data = best gallery quality)
+    candidates.sort(key=lambda x: len(x[1]), reverse=True)
+    return candidates[:NUM_MEMBERS]
+
+
+def save_gallery(identities: list[tuple[str, list[Path]]], gallery_dir: Path) -> dict[str, str]:
+    """
+    Copy IMAGES_EACH images for each selected identity into the gallery dir.
     Returns mapping {DemoMemberX: real_lfw_name} (for console display only).
     """
-    import cv2
-    from PIL import Image
-
-    target_names = lfw.target_names  # array of identity name strings
-    targets      = lfw.target        # array of identity indices per image
-    images       = lfw.images        # (N, H, W, 3) float32 [0,1]
-
-    # Pick identities that have enough images
-    from collections import defaultdict
-    identity_images: dict[int, list[int]] = defaultdict(list)
-    for idx, t in enumerate(targets):
-        identity_images[int(t)].append(idx)
-
-    # Sort by most images (most data = better gallery)
-    sorted_ids = sorted(identity_images.keys(),
-                        key=lambda k: len(identity_images[k]),
-                        reverse=True)
-
-    selected = sorted_ids[:NUM_MEMBERS]
-    mapping: dict[str, str] = {}
+    import shutil as _sh
 
     if gallery_dir.exists():
-        shutil.rmtree(gallery_dir)
+        _sh.rmtree(gallery_dir)
     gallery_dir.mkdir(parents=True, exist_ok=True)
 
-    for member_idx, identity_id in enumerate(selected):
+    mapping: dict[str, str] = {}
+    for member_idx, (real_name, img_paths) in enumerate(identities):
         label = MEMBER_LABELS[member_idx]
-        real_name = str(target_names[identity_id]).replace("_", " ")
-        mapping[label] = real_name
+        display_name = real_name.replace("_", " ")
+        mapping[label] = display_name
 
         member_dir = gallery_dir / label
         member_dir.mkdir(parents=True, exist_ok=True)
 
-        img_indices = identity_images[identity_id][:IMAGES_EACH]
-        for i, img_idx in enumerate(img_indices):
-            img_float = images[img_idx]  # (H, W, 3), float32 [0,1]
-            img_uint8 = (img_float * 255).astype("uint8")
-            # Convert RGB → BGR for OpenCV save
-            img_bgr = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2BGR)
-            out_path = member_dir / f"img_{i}.jpg"
-            cv2.imwrite(str(out_path), img_bgr)
+        selected = img_paths[:IMAGES_EACH]
+        for i, src in enumerate(selected):
+            dst = member_dir / f"img_{i}.jpg"
+            _sh.copy2(src, dst)
 
-        print(f"  {label}: {len(img_indices)} images saved  "
+        print(f"  {label}: {len(selected)} images saved "
               f"(mapped to LFW identity — see console only)")
 
     return mapping
@@ -134,7 +135,7 @@ def enroll_embeddings(gallery_dir: Path) -> None:
         print(f"\nEmbeddings enrolled for {count} demo members.")
         print(f"Embeddings saved to: {settings.face_embeddings_cache}")
     else:
-        print("\nNo embeddings generated. Check gallery images.")
+        print("\nNo embeddings generated. Check gallery images contain detectable faces.")
 
 
 def main():
@@ -144,24 +145,36 @@ def main():
     print(f"\nGallery dir : {GALLERY_DIR}")
     print(f"Dataset dir : {DATASET_DIR}\n")
 
-    # 1. Fetch LFW
+    # 1. Fetch LFW (downloads if not already present)
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
-    lfw = fetch_lfw(DATASET_DIR)
-    print(f"LFW loaded: {lfw.images.shape[0]} images, "
-          f"{len(lfw.target_names)} identities available\n")
+    fetch_lfw(LFW_HOME)
 
-    # 2. Save gallery images
-    print(f"Selecting {NUM_MEMBERS} identities ({IMAGES_EACH} images each)...")
-    mapping = save_gallery(lfw, GALLERY_DIR)
+    if not LFW_FUNNELED.exists():
+        print(f"ERROR: lfw_funneled not found at {LFW_FUNNELED}")
+        print("Please re-run to trigger download.")
+        sys.exit(1)
+
+    # 2. Pick best identities from full-res lfw_funneled
+    print(f"Selecting {NUM_MEMBERS} identities (>= {MIN_FACES} images each)...")
+    identities = pick_identities(LFW_FUNNELED)
+    if not identities:
+        print("No suitable identities found. Try reducing MIN_FACES.")
+        sys.exit(1)
+
+    print(f"Found {len(identities)} suitable identities.\n")
+
+    # 3. Save gallery images (250×250 full-res LFW images)
+    print(f"Saving {IMAGES_EACH} images per member to gallery...")
+    mapping = save_gallery(identities, GALLERY_DIR)
 
     print("\nDemo member mapping (console only — NOT written to any committed file):")
     for label, real_name in mapping.items():
-        print(f"  {label} → {real_name}")
+        print(f"  {label} -> {real_name}")
 
     print(f"\nGallery saved to: {GALLERY_DIR}")
     print("NOTE: Gallery images are gitignored. Do NOT commit them.\n")
 
-    # 3. Enroll embeddings
+    # 4. Enroll embeddings with InsightFace
     print("Enrolling face embeddings with InsightFace...")
     enroll_embeddings(GALLERY_DIR)
 

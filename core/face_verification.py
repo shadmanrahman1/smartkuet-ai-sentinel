@@ -20,6 +20,16 @@ from typing import Optional
 
 import numpy as np
 
+# ── Force InsightFace model cache into project folder ───────────────────────
+# InsightFace 1.0.1 does NOT read INSIGHTFACE_HOME from env.
+# The model root is controlled via the `root` parameter passed to FaceAnalysis().
+# We compute the project-local cache path here so it can be passed at init time.
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_INSIGHTFACE_HOME = _PROJECT_ROOT / ".cache" / "insightface"
+_INSIGHTFACE_HOME.mkdir(parents=True, exist_ok=True)
+# Keep an env var for documentation / shell scripts to reference
+os.environ.setdefault("INSIGHTFACE_HOME", str(_INSIGHTFACE_HOME))
+
 logger = logging.getLogger(__name__)
 
 # ── Status codes ────────────────────────────────────────────────────────────
@@ -141,22 +151,35 @@ class FaceVerificationService:
     # ── Model loading ────────────────────────────────────────────────────────
 
     def _try_load_model(self) -> None:
-        """Load InsightFace model. Sets self._model_loaded = False on any failure."""
+        """Load InsightFace model. Sets self._model_loaded = False on any failure.
+
+        Key: FaceAnalysis() accepts a `root` parameter that controls where it
+        looks for / downloads models. We pass our project-local .cache path
+        directly — this is the only reliable way to keep models off C: drive.
+        """
         try:
-            import insightface
             from insightface.app import FaceAnalysis
 
             providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
-            kwargs: dict = {"name": self.model_name, "providers": providers}
+            # Use project-local cache as root — FaceAnalysis always resolves
+            # model paths relative to this root, regardless of env vars.
+            model_root = str(_INSIGHTFACE_HOME)
             if self.insightface_cache_dir:
-                os.environ["INSIGHTFACE_HOME"] = str(self.insightface_cache_dir.parent)
                 self.insightface_cache_dir.mkdir(parents=True, exist_ok=True)
+                model_root = str(self.insightface_cache_dir)
 
-            self._app = FaceAnalysis(**kwargs)
+            self._app = FaceAnalysis(
+                name=self.model_name,
+                root=model_root,
+                providers=providers,
+            )
             self._app.prepare(ctx_id=0, det_size=(640, 640))
             self._model_loaded = True
-            logger.info("FaceVerificationService: InsightFace '%s' loaded.", self.model_name)
+            logger.info(
+                "FaceVerificationService: InsightFace '%s' loaded. root=%s",
+                self.model_name, model_root,
+            )
 
         except ImportError:
             logger.warning(
@@ -178,12 +201,22 @@ class FaceVerificationService:
         ])
 
     def _embed_image(self, image_path: Path) -> Optional[np.ndarray]:
-        """Return 512-dim embedding for the largest face in image, or None."""
+        """Return 512-dim embedding for the largest face in image, or None.
+
+        LFW images are 62×47px — too small for RetinaFace. We upscale any image
+        whose shortest side is < 160px so the detector can find the face.
+        """
         try:
             import cv2
             bgr = cv2.imread(str(image_path))
             if bgr is None:
                 return None
+            # Upscale small images (e.g. LFW 62×47) to minimum 160px shortest side
+            h, w = bgr.shape[:2]
+            min_side = min(h, w)
+            if min_side < 160:
+                scale = 160 / min_side
+                bgr = cv2.resize(bgr, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_CUBIC)
             faces = self._app.get(bgr)
             if not faces:
                 return None

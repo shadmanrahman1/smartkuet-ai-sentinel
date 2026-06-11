@@ -6,6 +6,8 @@ $env:YOLO_CONFIG_DIR = Join-Path $ProjectRoot ".cache\ultralytics"
 $env:TORCH_HOME = Join-Path $ProjectRoot ".cache\torch"
 $env:XDG_CACHE_HOME = Join-Path $ProjectRoot ".cache"
 $env:MPLCONFIGDIR = Join-Path $ProjectRoot ".cache\matplotlib"
+# Milestone 2B: keep InsightFace model cache inside project folder, not C:\Users\
+$env:INSIGHTFACE_HOME = Join-Path $ProjectRoot ".cache\insightface"
 $env:UVICORN_APP = "api.main:app"
 New-Item -ItemType Directory -Force -Path `
   $env:PIP_CACHE_DIR, `
@@ -14,6 +16,7 @@ New-Item -ItemType Directory -Force -Path `
   $env:TORCH_HOME, `
   $env:XDG_CACHE_HOME, `
   $env:MPLCONFIGDIR, `
+  $env:INSIGHTFACE_HOME, `
   (Join-Path $ProjectRoot "models"), `
   (Join-Path $ProjectRoot "runs"), `
   (Join-Path $ProjectRoot "runs\benchmarks"), `
@@ -28,3 +31,4 @@ Write-Host "  PIP_CACHE_DIR=$env:PIP_CACHE_DIR"
 Write-Host "  PYTHONPYCACHEPREFIX=$env:PYTHONPYCACHEPREFIX"
 Write-Host "  ULTRALYTICS_CONFIG_DIR=$env:ULTRALYTICS_CONFIG_DIR"
 Write-Host "  TORCH_HOME=$env:TORCH_HOME"
+Write-Host "  INSIGHTFACE_HOME=$env:INSIGHTFACE_HOME"

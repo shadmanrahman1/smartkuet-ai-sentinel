@@ -6,13 +6,13 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 2A-UI Optional React Showcase Frontend
+- Current milestone: Milestone 2B Open-Source Face Verification Prototype (branch: milestone-2b-open-face-verification)
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack (production/fallback): plain HTML, local CSS, and vanilla JavaScript in `dashboard/`. Routes `/`, `/guard`, `/exam` served directly by FastAPI. Always works offline.
 - Frontend stack (optional showcase): Vite + React in `showcase-frontend/`. Runs on port 5173. Uses Vite dev proxy to forward `/api` to FastAPI on port 8002. `node_modules/` and `dist/` are gitignored. No Next.js.
-- Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch.
-- YOLO is now included for object/person detection with runtime diagnostics, evidence capture, person tracking, and deterministic security event rules. No face recognition, InsightFace, MediaPipe, exam behavior scoring, training, or cloud APIs yet.
+- Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch, InsightFace.
+- YOLO is included for object/person detection, tracking, and security event rules. InsightFace is included for local face verification vs LFW demo gallery. No MediaPipe, exam behavior scoring, training, or cloud APIs yet.
 
 ## Current Implementation
 

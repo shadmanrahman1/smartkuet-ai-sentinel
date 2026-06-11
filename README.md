@@ -244,5 +244,13 @@ Three sample frames from different stages of the video are annotated and saved t
 > * **Temporary Tracking IDs**: Track IDs (e.g., `ID 1`, `ID 2`) are short-lived numbers assigned temporarily to keep track of a target's motion across consecutive frames, and do not represent student identities.
 > * **Human Decision-making**: The automated security alerts provide cues and instruction recommendations. The final gate control action (e.g., Allow, Deny, Verify ID) is determined entirely by the human security guard.
 
+## Demo Video Attribution and Privacy
+
+To protect the privacy of campus members and ensure professional standards:
+* **Private Faces**: Do not upload or record footage showing private faces without explicit consent, especially if dashboard screenshots or visual reports will be published.
+* **Public Sample Video Attribution**: If you are using open-source validation assets (such as the Intel IoT DevKit sample videos), make sure to reference [sample_videos/ATTRIBUTION.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/sample_videos/ATTRIBUTION.md).
+* **Consented Local Footage**: For the final project submission or live presentation, we strongly recommend recording your own local gate footage with consented participants.
+* **Temporary Track IDs**: Remember that track IDs (like `ID 1`, `ID 2`) are temporary indicators to trace motion across adjacent frames and do not represent student identity or permanent profiles.
+
 ## Next Recommended Milestone
-Milestone 2A: Start face detection and enrollment foundation. Face recognition and ID verification should still wait.
+Milestone 2A: Face detection and enrollment database foundation. Face recognition and student identification should still wait.

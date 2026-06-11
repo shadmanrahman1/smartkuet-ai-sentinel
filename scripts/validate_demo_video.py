@@ -82,6 +82,7 @@ def build_report_data(
     total_frames_read: int,
     processed_frames: int,
     inference_times: list[float],
+    warmup_frames: int,
     person_counts: list[int],
     phone_counts: list[int],
     vehicle_counts: list[int],
@@ -90,12 +91,25 @@ def build_report_data(
     total_security_events: int,
     event_count_by_type: dict[str, int],
     event_count_by_level: dict[str, int],
-    highest_level_seen: str,
+    highest_security_level_seen: str,
     real_elapsed: float,
+    saved_validation_frames: list[str],
+    notes: list[str],
 ) -> dict[str, Any]:
-    avg_inference = (
+    if len(inference_times) > warmup_frames:
+        after_warmup_subset = inference_times[warmup_frames:]
+    else:
+        after_warmup_subset = []
+
+    avg_inference_all = (
         sum(inference_times) / len(inference_times) if inference_times else 0.0
     )
+    avg_inference_after_warmup = (
+        sum(after_warmup_subset) / len(after_warmup_subset)
+        if after_warmup_subset
+        else avg_inference_all
+    )
+
     approx_fps = total_frames_read / real_elapsed if real_elapsed > 0 else 0.0
     avg_person = sum(person_counts) / len(person_counts) if person_counts else 0.0
     avg_phone = sum(phone_counts) / len(phone_counts) if phone_counts else 0.0
@@ -110,7 +124,12 @@ def build_report_data(
         "duration_seconds": seconds,
         "total_frames_read": total_frames_read,
         "processed_frames": processed_frames,
-        "average_inference_ms": round(avg_inference, 2),
+        "warmup_frames": warmup_frames,
+        "average_inference_ms": round(avg_inference_after_warmup, 2),
+        "average_inference_ms_all": round(avg_inference_all, 2),
+        "average_inference_ms_after_warmup": round(
+            avg_inference_after_warmup, 2
+        ),
         "approximate_fps": round(approx_fps, 2),
         "average_person_count": round(avg_person, 2),
         "average_phone_count": round(avg_phone, 2),
@@ -120,8 +139,45 @@ def build_report_data(
         "total_security_events": total_security_events,
         "event_count_by_type": event_count_by_type,
         "event_count_by_level": event_count_by_level,
-        "highest_security_level_seen": highest_level_seen,
+        "highest_security_level_seen": highest_security_level_seen,
+        "saved_validation_frames": saved_validation_frames,
+        "saved_validation_frame_count": len(saved_validation_frames),
+        "notes": notes,
     }
+
+
+def write_markdown_summary(report: dict[str, Any], output_path: Path) -> None:
+    saved_paths_str = "\n".join(
+        [
+            f"* `runs/videos/validation_frames/{Path(p).name}`"
+            for p in report["saved_validation_frames"]
+        ]
+    )
+
+    content = f"""# Latest Validation Summary
+
+This document provides a summary of the latest demo validation run for the proposal.
+
+* **Source Video**: `{report['source']}`
+* **Approximate FPS**: `{report['approximate_fps']}`
+* **Average Inference Time (after warmup)**: `{report['average_inference_ms_after_warmup']} ms` (total with warmup: `{report['average_inference_ms_all']} ms`)
+* **Average Person Count**: `{report['average_person_count']}`
+* **Max Active Tracks**: `{report['max_active_tracks']}`
+* **Total Tracks Seen**: `{report['total_tracks_seen']}`
+* **Event Counts by Level**: `{report['event_count_by_level']}`
+* **Event Counts by Type**: `{report['event_count_by_type']}`
+* **Highest Security Level**: `{report['highest_security_level_seen'].upper()}`
+
+## Saved Bounding Box Verification Frames
+
+{saved_paths_str}
+
+> [!NOTE]
+> * **Track IDs are temporary and do not identify people.** They represent motion targets across consecutive frames.
+> * **Security Action**: Automated cues support the monitoring guard; the final gate action is decided by human operators.
+"""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(content.strip(), encoding="utf-8")
 
 
 def main() -> int:
@@ -134,6 +190,17 @@ def main() -> int:
         help="Path to local video file or camera source.",
     )
     parser.add_argument("--seconds", type=float, default=30.0)
+    parser.add_argument(
+        "--warmup-frames",
+        type=int,
+        default=3,
+        help="Number of initial frames to exclude from average inference warmup calculation.",
+    )
+    parser.add_argument(
+        "--write-summary",
+        action="store_true",
+        help="Save latest_validation_summary.md for the proposal.",
+    )
     args = parser.parse_args()
 
     resolved_source = parse_source(args.source)
@@ -195,30 +262,6 @@ def main() -> int:
         location=settings.security_location,
     )
 
-    total_video_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    video_fps = capture.get(cv2.CAP_PROP_FPS)
-    if video_fps <= 0:
-        video_fps = 30.0
-    max_frames_to_read = int(video_fps * args.seconds)
-
-    if total_video_frames > 0:
-        frames_to_process = min(total_video_frames, max_frames_to_read)
-    else:
-        frames_to_process = max_frames_to_read
-
-    save_indices = []
-    if frames_to_process >= 3:
-        save_indices = [
-            max(0, frames_to_process // 10),
-            max(1, frames_to_process // 2),
-            max(2, int(frames_to_process * 0.9)),
-        ]
-    elif frames_to_process == 2:
-        save_indices = [0, 1]
-    elif frames_to_process == 1:
-        save_indices = [0]
-    save_indices = sorted(list(set(save_indices)))
-
     total_frames_read = 0
     processed_frames = 0
     inference_times = []
@@ -232,6 +275,9 @@ def main() -> int:
     event_count_by_type = {}
     event_count_by_level = {}
     highest_level_seen = "green"
+
+    # Dynamic frame memory buffering dict
+    captured_frames = {}
 
     start_time = time.perf_counter()
 
@@ -277,7 +323,6 @@ def main() -> int:
                 max_active_tracks = max(max_active_tracks, active_track_count)
             else:
                 if tracker is not None:
-                    # Update tracker with empty/cached detections to age existing tracks
                     tracker_status = tracker.get_status()
                     active_tracks = tracker_status["active_tracks"]
                     active_track_count = tracker_status["active_track_count"]
@@ -333,25 +378,28 @@ def main() -> int:
                 ):
                     highest_level_seen = level
 
-            # Save annotated frame if this index matches save indices
-            current_frame_idx = total_frames_read - 1
-            if current_frame_idx in save_indices:
-                if tracker is not None:
-                    annotated = annotate_frame_with_tracking(
-                        frame,
-                        detections if "detections" in locals() else [],
-                        active_tracks,
-                        detector,
-                    )
-                else:
-                    annotated = detector.annotate(
-                        frame, detections if "detections" in locals() else []
-                    )
-
-                frame_path = (
-                    validation_frames_dir / f"frame_{total_frames_read:04d}.jpg"
+            # Buffer frame for selection
+            if tracker is not None:
+                annotated = annotate_frame_with_tracking(
+                    frame,
+                    detections if "detections" in locals() else [],
+                    active_tracks,
+                    detector,
                 )
-                cv2.imwrite(str(frame_path), annotated)
+            else:
+                annotated = detector.annotate(
+                    frame, detections if "detections" in locals() else []
+                )
+
+            # Store the frame at regular intervals to save RAM
+            if total_frames_read == 1 or total_frames_read % 5 == 0:
+                captured_frames[total_frames_read] = annotated.copy()
+            else:
+                # Keep latest frame as candidate for end frame
+                captured_frames[total_frames_read] = annotated.copy()
+                prev_idx = total_frames_read - 1
+                if prev_idx > 1 and prev_idx % 5 != 0:
+                    captured_frames.pop(prev_idx, None)
 
     except Exception as exc:
         print(f"Error during validation loop: {exc}")
@@ -360,6 +408,46 @@ def main() -> int:
 
     real_elapsed = max(0.001, time.perf_counter() - start_time)
 
+    # Frame saving logic based on processed progress
+    available_indices = sorted(list(captured_frames.keys()))
+    saved_validation_frames = []
+    notes = []
+
+    if len(available_indices) >= 3:
+        idx1 = available_indices[0]
+        mid_target = total_frames_read // 2
+        idx2 = min(available_indices, key=lambda x: abs(x - mid_target))
+        idx3 = available_indices[-1]
+
+        selected = sorted(list({idx1, idx2, idx3}))
+        if len(selected) < 3 and len(available_indices) >= 3:
+            n = len(available_indices)
+            selected = [
+                available_indices[0],
+                available_indices[n // 2],
+                available_indices[-1],
+            ]
+    else:
+        selected = available_indices
+        notes.append(
+            f"Fewer than 3 frames processed ({len(available_indices)} processed). Saved all available."
+        )
+
+    for idx, frame_idx in enumerate(selected):
+        frame_name = f"validation_sample_{idx + 1}.jpg"
+        frame_path = validation_frames_dir / frame_name
+        cv2.imwrite(str(frame_path), captured_frames[frame_idx])
+        try:
+            display_path = str(frame_path.relative_to(PROJECT_ROOT))
+        except ValueError:
+            display_path = str(frame_path)
+        saved_validation_frames.append(display_path)
+
+    if len(saved_validation_frames) < 3:
+        notes.append(
+            f"Only {len(saved_validation_frames)} frames saved because video was too short or ended early."
+        )
+
     report = build_report_data(
         source=args.source,
         resolved_source=str(resolved_source),
@@ -367,6 +455,7 @@ def main() -> int:
         total_frames_read=total_frames_read,
         processed_frames=processed_frames,
         inference_times=inference_times,
+        warmup_frames=args.warmup_frames,
         person_counts=person_counts,
         phone_counts=phone_counts,
         vehicle_counts=vehicle_counts,
@@ -375,8 +464,10 @@ def main() -> int:
         total_security_events=total_security_events,
         event_count_by_type=event_count_by_type,
         event_count_by_level=event_count_by_level,
-        highest_level_seen=highest_level_seen,
+        highest_security_level_seen=highest_level_seen,
         real_elapsed=real_elapsed,
+        saved_validation_frames=saved_validation_frames,
+        notes=notes,
     )
 
     # Save JSON report
@@ -386,15 +477,26 @@ def main() -> int:
     )
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
+    # Save Markdown summary if requested
+    if args.write_summary:
+        summary_path = (
+            settings.benchmark_output_dir / "latest_validation_summary.md"
+        )
+        write_markdown_summary(report, summary_path)
+
     # Print validation report to console
     print("\n====================================================")
     print("               VALIDATION REPORT SUMMARY             ")
     print("====================================================")
     print(f"Report saved to:             {report_path}")
+    if args.write_summary:
+        print(f"Summary markdown saved to:   {summary_path}")
     print(f"Total frames read:           {total_frames_read}")
     print(f"Processed frames (YOLO run): {processed_frames}")
     print(f"Approximate FPS:             {report['approximate_fps']}")
-    print(f"Average inference:           {report['average_inference_ms']} ms")
+    print(
+        f"Average inference:           {report['average_inference_ms_after_warmup']} ms"
+    )
     print(f"Average person count:        {report['average_person_count']}")
     print(f"Average phone count:         {report['average_phone_count']}")
     print(f"Average vehicle count:       {report['average_vehicle_count']}")

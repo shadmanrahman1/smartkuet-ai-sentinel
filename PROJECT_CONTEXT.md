@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1E Validation and Tuning
+- Current milestone: Milestone 1F Demo Polish and Validation Fixes
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
@@ -277,4 +277,18 @@ Known limitations:
 - The system still runs on CPU fallback only because CUDA is not installed in local PyTorch.
 - Demo video must be added by the user manually to `sample_videos/demo.mp4`.
 - Track IDs are temporary and do not identify specific students.
+
+
+### 2026-06-11 - Milestone 1F Demo Polish and Validation Fixes
+
+Polished the demo validation reporting, added warmup filters, dynamic frame saving, and attribution/privacy guidelines.
+
+- Updated [scripts/validate_demo_video.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/scripts/validate_demo_video.py) with `--warmup-frames` option to exclude lazy-loading latency and compute clean `average_inference_ms_after_warmup` and `average_inference_ms_all` metrics.
+- Added dynamic buffering in the validation script to guarantee exactly 3 evenly spaced annotated frames are written as `validation_sample_1.jpg`, `validation_sample_2.jpg`, and `validation_sample_3.jpg` based on actual processed progress.
+- Added `--write-summary` option to output proposal-ready summary markdown `runs/benchmarks/latest_validation_summary.md`.
+- Created [sample_videos/ATTRIBUTION.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/sample_videos/ATTRIBUTION.md) to provide license attributes and privacy guidelines for validation videos.
+- Updated [.gitignore](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/.gitignore) to exclude large demo video formats while keeping documentation.
+- Updated [scripts/print_demo_checklist.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/scripts/print_demo_checklist.py) with warning reminders and updated command flags.
+- Updated [README.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/README.md) with sections on privacy, video attribution, and temporary ID disclaimers.
+- Updated tests in [tests/test_validation_report_shape.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_validation_report_shape.py) and added new tests [tests/test_attribution_exists.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_attribution_exists.py) and [tests/test_gitignore_ignores_videos.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_gitignore_ignores_videos.py).
 

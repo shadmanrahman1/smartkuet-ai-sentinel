@@ -68,6 +68,7 @@ class Settings:
     security_high_risk_cooldown_seconds: float = 5.0
     security_location: str = "KUET Main Gate"
     security_save_event_snapshot: bool = True
+    demo_profile: str = "gate_daytime"
 
 
 def ensure_project_dirs(config: Settings) -> None:
@@ -213,6 +214,7 @@ def load_settings() -> Settings:
         security_save_event_snapshot=_bool(
             os.getenv("SECURITY_SAVE_EVENT_SNAPSHOT", "true")
         ),
+        demo_profile=os.getenv("DEMO_PROFILE", "gate_daytime"),
     )
     ensure_project_dirs(config)
     return config

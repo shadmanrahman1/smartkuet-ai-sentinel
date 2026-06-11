@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1D security event rules engine
+- Current milestone: Milestone 1E Validation and Tuning
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
@@ -254,4 +254,27 @@ Known limitations:
 - Torch is still CPU-only, so RTX 3050 acceleration is not active.
 - No `sample_videos/demo.mp4` exists yet, so video-file benchmark still reports `Could not open source`.
 - Security thresholds are defaults and should be tuned with real KUET gate footage.
-- Next recommended milestone: Milestone 1E, validate with a real local CCTV/sample video and tune thresholds before identity features.
+- Next recommended milestone: Milestone 2A, start the face detection and identity foundation after tuning validation passes successfully. Face recognition should still wait for baseline approval.
+
+### 2026-06-11 - Milestone 1E Validation and Tuning
+
+Validated and tuned the YOLO + tracking + security rules pipeline and added demo-readiness resources.
+
+- Added settings loading for `DEMO_PROFILE` in [core/config.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/core/config.py) and default demo profile options to [.env.example](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/.env.example).
+- Created [scripts/print_demo_checklist.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/scripts/print_demo_checklist.py) to check local files (demo video, YOLO model), CUDA status, directory presence, and list setup commands.
+- Created [scripts/validate_demo_video.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/scripts/validate_demo_video.py) which runs the pipeline frame-by-frame and exports performance and security metrics to `runs/benchmarks/validation_YYYYMMDD_HHMMSS.json` and 3 annotated frames to `runs/videos/validation_frames/`.
+- Updated [README.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/README.md) with sections on sample videos, running the validation script, JSON formatting, annotated frames, track limitations, and human security guard final control.
+- Added tests in [tests/test_demo_checklist_script.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_demo_checklist_script.py), [tests/test_validate_demo_video_missing_source.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_validate_demo_video_missing_source.py), and [tests/test_validation_report_shape.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_validation_report_shape.py).
+
+Tests and diagnostics:
+
+- `pytest` passed 32 tests (3 new tests added).
+- Verified `scripts/print_demo_checklist.py` outputs all checks correctly.
+- Gracefully handled missing source video inside the validation script with helpful user instructions.
+
+Known limitations:
+
+- The system still runs on CPU fallback only because CUDA is not installed in local PyTorch.
+- Demo video must be added by the user manually to `sample_videos/demo.mp4`.
+- Track IDs are temporary and do not identify specific students.
+

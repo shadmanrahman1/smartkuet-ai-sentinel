@@ -213,4 +213,36 @@ Security rules not firing:
 - Check `/api/security/status` for current level, instruction, cooldowns, thresholds, and evidence values.
 - Use `POST /api/security/rules/reset` if a repeated condition is intentionally under cooldown.
 
-Next recommended milestone: Milestone 1E, validate the rules with a real local CCTV/sample video and tune thresholds before adding identity features. Face recognition should still wait.
+## Milestone 1E Demo Validation
+
+This milestone provides validation and tuning tools for the YOLO detection, person tracking, and security rules engine pipeline.
+
+### Adding a Sample Video
+1. Place a video file (e.g., `demo.mp4`) in the `sample_videos/` directory.
+2. If `sample_videos/demo.mp4` is not present, validation scripts will print a clear instruction and exit gracefully.
+
+### Running Validation
+Run the validation script to execute the pipeline frame-by-frame and collect metrics:
+```powershell
+python scripts/validate_demo_video.py --source sample_videos/demo.mp4 --seconds 30
+```
+
+### Interpreting the JSON Report
+Validation reports are saved in `runs/benchmarks/validation_YYYYMMDD_HHMMSS.json`. The report includes:
+* `total_frames_read`: Total frames read from the video.
+* `processed_frames`: Total frames where YOLO detection was run.
+* `approximate_fps` & `average_inference_ms`: Performance statistics.
+* `average_person_count`, `average_phone_count`, `average_vehicle_count`: Average counts of objects.
+* `max_active_tracks` & `total_tracks_seen`: Tracking statistics.
+* `total_security_events`, `event_count_by_type`, `event_count_by_level`, and `highest_security_level_seen`: Security rules aggregates.
+
+### Annotated Frames
+Three sample frames from different stages of the video are annotated and saved to the `runs/videos/validation_frames/` directory to visually verify detection bounding boxes, tracking labels, and rules status.
+
+> [!IMPORTANT]
+> * **No Identity Recognition**: This system does NOT perform face recognition, face identification, or verify student identities.
+> * **Temporary Tracking IDs**: Track IDs (e.g., `ID 1`, `ID 2`) are short-lived numbers assigned temporarily to keep track of a target's motion across consecutive frames, and do not represent student identities.
+> * **Human Decision-making**: The automated security alerts provide cues and instruction recommendations. The final gate control action (e.g., Allow, Deny, Verify ID) is determined entirely by the human security guard.
+
+## Next Recommended Milestone
+Milestone 2A: Start face detection and enrollment foundation. Face recognition and ID verification should still wait.

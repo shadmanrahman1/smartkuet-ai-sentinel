@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1H Final Submission Asset Pack
+- Current milestone: Milestone 1I Final Repository QA and Optional Screenshot Capture
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
@@ -344,4 +344,29 @@ Known limitations:
 Next recommended milestone:
 
 - Milestone 1I: Final Repository QA and Optional Screenshot Capture.
+
+### 2026-06-11 - Milestone 1I Final Repository QA and Optional Screenshot Capture
+
+Performed final repository QA auditing, static page smoke tests, ignore index validation, and created the final QA report.
+
+- Created [docs/final_qa_report.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/final_qa_report.md) documenting pytest, checklist, runtime configs, smoke checks, and capture guides.
+- Updated [PROJECT_CONTEXT.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/PROJECT_CONTEXT.md) to set active milestone to 1I and log all completed QA tasks.
+- Added tests in [tests/test_final_qa_report_exists.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_final_qa_report_exists.py).
+
+Tests and diagnostics:
+
+- `pytest` passed 46 tests successfully (1 new static QA document validation test added).
+- Verified `print_demo_checklist.py` and `check_runtime.py` output all status criteria successfully.
+- Conducted local endpoint checks verifying all web dashboards and APIs return 200.
+- Confirmed with `git status --ignored` that database files, snapshots, validation reports, model weights, and logs are safely ignored.
+
+Known limitations:
+
+- YOLO CPU fallback active locally.
+- Seating invigilation scores are concept mock signals.
+- Camera and security rule thresholds require calibration with live gate recording.
+
+Next recommended milestone:
+
+- Manual submission package assembly and presentation practice.
 

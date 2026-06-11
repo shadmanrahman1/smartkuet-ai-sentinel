@@ -9,7 +9,7 @@ function colorClass(value) {
 
 function setText(id, value) {
   const element = document.getElementById(id);
-  if (element) element.textContent = value ?? "Waiting for event...";
+  if (element) element.textContent = value ?? "Waiting for live data...";
 }
 
 function setStatusCard(id, color) {
@@ -29,9 +29,19 @@ function formatTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString();
 }
 
+function clearPlaceholder(container) {
+  if (!container) return;
+  const placeholder = container.querySelector(".placeholder-text");
+  if (placeholder) {
+    placeholder.remove();
+  }
+}
+
 function prependEvent(containerId, html) {
   const container = document.getElementById(containerId);
   if (!container) return;
+  clearPlaceholder(container);
+  
   const wrapper = document.createElement("div");
   wrapper.className = "event-row";
   wrapper.innerHTML = html;
@@ -42,6 +52,8 @@ function prependEvent(containerId, html) {
 function prependColoredEvent(containerId, html, color) {
   const container = document.getElementById(containerId);
   if (!container) return;
+  clearPlaceholder(container);
+
   const wrapper = document.createElement("div");
   wrapper.className = `event-row ${colorClass(color)}`;
   wrapper.innerHTML = html;
@@ -61,7 +73,7 @@ function updateDetectionSummary(summary = {}) {
       ? "YOLO unavailable"
       : "YOLO enabled";
   setText("detection-status", status);
-  setText("detection-error", summary.error || "Annotated stream ready when camera frames are available.");
+  setText("detection-error", summary.error || "No active tracks");
 }
 
 function formatResolution(camera = {}) {
@@ -81,14 +93,14 @@ function updateRuntimeStatus(status = {}) {
   updateTrackingSummary(tracking);
   updateSecurityStatus(security, summary, tracking);
   setText("diag-camera-source", camera.source || "--");
-  setText("diag-camera-opened", camera.is_opened ? "opened" : "not opened");
+  setText("diag-camera-opened", camera.is_opened ? "Opened" : "Camera unavailable");
   setText("diag-source-type", camera.source_type || "--");
   setText("diag-resolution", formatResolution(camera));
   setText("diag-camera-fps", camera.fps_estimate ?? "--");
-  setText("diag-yolo-status", video.model_error ? "unavailable" : video.yolo_enabled ? "enabled" : "disabled");
+  setText("diag-yolo-status", video.model_error ? "Unavailable" : video.yolo_enabled ? "Enabled" : "Disabled");
   setText("diag-requested-device", video.device || "--");
   setText("diag-selected-device", video.selected_device || "--");
-  setText("diag-cuda", runtime.cuda_available ? "yes" : "no");
+  setText("diag-cuda", runtime.cuda_available ? "Yes" : "No");
   setText("diag-inference", video.last_inference_ms == null ? "--" : `${video.last_inference_ms} ms`);
   setText("diag-effective-fps", video.effective_fps ?? "--");
   setText("diag-error", video.model_error || camera.last_error || "Runtime diagnostics ready.");
@@ -139,7 +151,7 @@ function updateSecurityStatus(status = {}, summary = {}, tracking = {}, event = 
   setText("security-vehicles", vehicleCount);
   setText("security-crowding-threshold", status.crowding_person_threshold ?? "--");
   setText("security-loiter-threshold", status.loiter_seconds == null ? "--" : `${status.loiter_seconds}s`);
-  setText("security-after-hours", evidence.after_hours == null ? "--" : evidence.after_hours ? "yes" : "no");
+  setText("security-after-hours", evidence.after_hours == null ? "--" : evidence.after_hours ? "Yes" : "No");
   setText(
     "security-evidence-summary",
     `Tracks ${activeTracks} | max age ${maxTrackAge}s | phones ${phoneCount} | vehicles ${vehicleCount}`
@@ -148,21 +160,21 @@ function updateSecurityStatus(status = {}, summary = {}, tracking = {}, event = 
 
 function updateTrackingSummary(tracking = {}) {
   const tracks = tracking.active_tracks || [];
-  setText("tracking-enabled", tracking.enabled === false ? "disabled" : "enabled");
+  setText("tracking-enabled", tracking.enabled === false ? "Disabled" : "Enabled");
   setText("tracking-type", tracking.tracker_type || "--");
   setText("tracking-active", tracking.active_track_count ?? tracks.length ?? 0);
   setText("tracking-total", tracking.total_tracks_seen ?? 0);
   setText("guard-track-count", tracking.active_track_count ?? tracks.length ?? 0);
   setText("guard-track-ids", tracks.length ? tracks.map((track) => `ID ${track.track_id}`).join(", ") : "--");
-  setText("tracking-error", tracking.error || "Tracking ready.");
+  setText("tracking-error", tracking.error || "No active tracks");
 
   const list = document.getElementById("tracking-list");
   if (!list) return;
   list.innerHTML = "";
   if (!tracks.length) {
     const empty = document.createElement("div");
-    empty.className = "event-row";
-    empty.innerHTML = '<span class="muted">No active person tracks.</span>';
+    empty.className = "event-row placeholder-text";
+    empty.innerHTML = '<span class="muted">No active tracks</span>';
     list.appendChild(empty);
     return;
   }
@@ -250,6 +262,13 @@ async function resetSecurityRules() {
 
 function connectSecurity(options = {}) {
   const socket = new WebSocket(wsUrl("/ws/security"));
+  
+  // Set initial placeholder text if list is empty
+  const list = document.getElementById(options.listId || "security-events");
+  if (list && list.children.length === 0) {
+    list.innerHTML = '<div class="placeholder-text muted" style="font-size: 13px;">No recent security events</div>';
+  }
+
   socket.onmessage = (message) => {
     const event = JSON.parse(message.data);
     const color = colorClass(event.level || event.status_color);
@@ -281,6 +300,13 @@ function connectSecurity(options = {}) {
 
 function connectExam(options = {}) {
   const socket = new WebSocket(wsUrl("/ws/exam"));
+
+  // Set initial placeholder text if list is empty
+  const list = document.getElementById(options.listId || "exam-events");
+  if (list && list.children.length === 0) {
+    list.innerHTML = '<div class="placeholder-text muted" style="font-size: 13px;">Waiting for live data...</div>';
+  }
+
   socket.onmessage = (message) => {
     const event = JSON.parse(message.data);
     const color = colorClass(event.color_level);

@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1F Demo Polish and Validation Fixes
+- Current milestone: Milestone 1G Demo UI and Submission Screenshot Polish
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
@@ -291,4 +291,32 @@ Polished the demo validation reporting, added warmup filters, dynamic frame savi
 - Updated [scripts/print_demo_checklist.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/scripts/print_demo_checklist.py) with warning reminders and updated command flags.
 - Updated [README.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/README.md) with sections on privacy, video attribution, and temporary ID disclaimers.
 - Updated tests in [tests/test_validation_report_shape.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_validation_report_shape.py) and added new tests [tests/test_attribution_exists.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_attribution_exists.py) and [tests/test_gitignore_ignores_videos.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_gitignore_ignores_videos.py).
+
+### 2026-06-11 - Milestone 1G Demo UI and Submission Screenshot Polish
+
+Polished the design aesthetics, layouts, and documentation to make the dashboard screens screenshot-ready for the proposal.
+
+- Overwrote [dashboard/styles.css](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/dashboard/styles.css) with a dark theme design system incorporating glassmorphism, gradient text headers, responsive padding, HSL status indicators (green, yellow, orange, red), and custom hover/focus transition dynamics.
+- Polished [dashboard/index.html](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/dashboard/index.html) with "SmartKUET Sentinel" branding subtitle, a demo status strip showing offline claims, "Live annotated video feed" canvas labels, and the central Human-in-the-Loop policy disclaimer.
+- Re-styled [dashboard/guard.html](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/dashboard/guard.html) as a mobile-first decision assistant with enlarged status cards, gate action buttons (ALLOW, VERIFY ID, DENY), and helper disclaimers.
+- Refactored [dashboard/exam.html](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/dashboard/exam.html) mock page with suspicion score cards, suspicion level index references, and action overrides.
+- Updated [dashboard/app.js](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/dashboard/app.js) to append dynamic text state formatting and clear out WebSocket placeholders ("No recent security events", "Waiting for live data...") when messages are received.
+- Created [docs/demo_runbook.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_runbook.md) runbook with exact setup checklists, commands, browser URLs, and screenshot points.
+- Created [docs/submission_pitch.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/submission_pitch.md) containing the official innovation proposal pitch, offline edge-AI flow architecture, and current prototype capacities.
+- Added tests in [tests/test_demo_docs_exist.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_demo_docs_exist.py) and [tests/test_dashboard_static_content.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_dashboard_static_content.py).
+
+Tests and diagnostics:
+
+- `pytest` passed successfully with 37 tests (2 new static content/doc tests added).
+- Verified local styles, cards, and disclaimers are correctly served.
+
+Known limitations:
+
+- The system runs on CPU fallback locally unless GPU CUDA-enabled PyTorch is configured.
+- Invigilation scoring and student identity checking remain mock/future signals.
+- Security thresholds must be calibrated with live KUET gate footage.
+
+Next recommended milestone:
+
+- Milestone 1H: Final Submission Asset Pack — screenshots, demo summary, proposal PDF/README polish, and final repository cleanup.
 

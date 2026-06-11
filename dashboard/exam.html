@@ -3,47 +3,96 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Examiner Page</title>
+    <title>SmartKUET Sentinel - Examiner View</title>
     <link rel="stylesheet" href="/dashboard/styles.css" />
   </head>
   <body>
+    <!-- Demo status strip -->
+    <div class="demo-strip">
+      <div class="demo-strip-tags">
+        <span class="demo-tag disclaimer">Future Module Mock</span>
+        <span class="demo-tag">Human-in-the-loop</span>
+      </div>
+      <span class="muted" style="font-size: 11px;">Milestone 1G Examiner View</span>
+    </div>
+
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <span class="eyebrow">Exam Worker</span>
-          <h1>Examiner Page</h1>
-          <p class="muted">Mock suspicion scoring and examiner review controls.</p>
+          <span class="eyebrow">SmartKUET Sentinel</span>
+          <h1>Examiner View</h1>
+          <p class="muted">AI-assisted exam integrity invigilation dashboard (mock signal)</p>
         </div>
         <nav class="nav">
-          <a class="button" href="/">Dashboard</a>
-          <a class="button" href="/guard">Guard</a>
+          <a class="button" href="/">Central Dashboard</a>
+          <a class="button" href="/guard">Guard View</a>
         </nav>
       </header>
 
       <section class="grid">
         <article class="panel">
+          <div class="panel-header">
+            <h2>Integrity Risk Level</h2>
+            <span class="badge yellow">Future module / mock signal</span>
+          </div>
+
           <div id="exam-card" class="status-card large green">
-            <span class="badge green">exam</span>
-            <p class="muted">Seat <strong id="exam-seat">--</strong></p>
-            <h2 id="exam-status">Waiting for event...</h2>
-            <div class="metric" id="exam-score">0.0</div>
-            <p class="muted">Score change <strong id="exam-added">+0.0</strong></p>
+            <span class="badge green">Suspicion Score</span>
+            <p class="muted" style="margin-top: 4px;">Candidate Desk: <strong id="exam-seat">--</strong></p>
+            <h2 id="exam-status" style="font-size: 26px; font-weight: 850;">Waiting for event...</h2>
+            
+            <div style="margin: 16px 0;">
+              <div class="metric" id="exam-score">0.0</div>
+              <p class="muted" style="font-size: 13px; margin-top: 6px;">Latest change: <strong id="exam-added" style="color: var(--yellow-text);">+0.0</strong></p>
+            </div>
           </div>
+
           <div class="actions two">
-            <button class="button green" onclick="localAction('Examiner action recorded locally: cleared false positive')">Clear false positive</button>
-            <button class="button yellow" onclick="localAction('Examiner action recorded locally: marked for review')">Mark for review</button>
+            <button class="button green" onclick="localAction('Examiner action: Candidate suspicion cleared locally')">Clear False Positive</button>
+            <button class="button yellow" onclick="localAction('Examiner action: Candidate flagged for post-exam review')">Mark for Review</button>
           </div>
-          <p id="local-action" class="notice"></p>
+          
+          <p id="local-action" class="notice" style="color: var(--blue); margin-top: 14px; font-size: 13px;"></p>
         </article>
 
         <article class="panel">
           <div class="panel-header">
-            <h2>Recent Behaviors</h2>
-            <span class="muted">Live</span>
+            <h2>Suspicion Level Reference</h2>
+            <span class="muted">Threshold levels</span>
           </div>
-          <div id="exam-events" class="events" aria-live="polite"></div>
+          
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div class="event-row green" style="padding: 10px;">
+              <strong>GREEN (Score &lt; 3.0)</strong>
+              <span class="muted">Normal focus and posture. Standard workspace activity.</span>
+            </div>
+            <div class="event-row yellow" style="padding: 10px;">
+              <strong>YELLOW (Score 3.0 - 5.0)</strong>
+              <span class="muted">Minor variance (e.g., repeated off-screen gaze or unusual hand movements).</span>
+            </div>
+            <div class="event-row orange" style="padding: 10px;">
+              <strong>ORANGE (Score 5.1 - 7.5)</strong>
+              <span class="muted">Moderate variance (e.g., phone visibility or candidate standing up).</span>
+            </div>
+            <div class="event-row red" style="padding: 10px;">
+              <strong>RED (Score &gt; 7.5)</strong>
+              <span class="muted">Critical indicators (e.g., candidate seat vacant or multiple devices detected).</span>
+            </div>
+          </div>
         </article>
       </section>
+
+      <section class="panel" style="margin-top: 20px">
+        <div class="panel-header">
+          <h2>Recent Behaviors Log</h2>
+          <span class="muted">Real-time alerts</span>
+        </div>
+        <div id="exam-events" class="events" aria-live="polite"></div>
+      </section>
+
+      <footer class="footer-disclaimer">
+        <strong>Human-in-the-Loop policy</strong>: AI only assists invigilators by flagging potential visual anomalies. The final decision to act remains entirely with the human examiner/invigilator.
+      </footer>
     </main>
 
     <script src="/dashboard/app.js"></script>

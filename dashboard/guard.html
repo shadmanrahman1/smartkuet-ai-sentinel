@@ -3,31 +3,42 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Guard Interface</title>
+    <title>SmartKUET Sentinel - Guard Interface</title>
     <link rel="stylesheet" href="/dashboard/styles.css" />
   </head>
   <body>
+    <!-- Demo status strip -->
+    <div class="demo-strip">
+      <div class="demo-strip-tags">
+        <span class="demo-tag">Local/offline prototype</span>
+        <span class="demo-tag">Human-in-the-loop</span>
+      </div>
+      <span class="muted" style="font-size: 11px;">Milestone 1G Guard View</span>
+    </div>
+
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <span class="eyebrow">Security Rules</span>
+          <span class="eyebrow">SmartKUET Sentinel</span>
           <h1>Guard Interface</h1>
-          <p class="muted">Mobile-first rule status and local guard actions.</p>
+          <p class="muted">Mobile-first decision assistant for gate checkpoints</p>
         </div>
         <nav class="nav">
-          <a class="button" href="/">Dashboard</a>
-          <a class="button" href="/exam">Examiner</a>
+          <a class="button" href="/">Central Dashboard</a>
+          <a class="button" href="/exam">Examiner View</a>
         </nav>
       </header>
 
       <section class="grid single">
         <article class="panel">
+          <!-- Main Risk Card -->
           <div id="security-card" class="status-card large green">
-            <span class="badge green">security</span>
+            <span class="badge green">Security Level</span>
             <p class="muted" id="security-location">KUET Main Gate</p>
-            <h2 id="security-status">Waiting for event...</h2>
-            <p id="security-instruction">Connecting to /ws/security</p>
-            <p class="muted">Confidence <strong id="security-confidence">--</strong></p>
+            <h2 id="security-status" style="font-size: 26px; font-weight: 850; letter-spacing: -0.02em;">Waiting for event...</h2>
+            <p id="security-instruction" style="font-size: 16px; font-weight: 550; color: #fff;">Connecting to /ws/security...</p>
+            <p class="muted" style="font-size: 13px;">Event confidence: <strong id="security-confidence">--</strong></p>
+            
             <div class="status-detail-grid">
               <div class="status-detail">
                 <span class="muted">Current level</span>
@@ -38,12 +49,12 @@
                 <strong id="security-event-type" class="diagnostic-value">NORMAL_ACTIVITY</strong>
               </div>
               <div class="status-detail">
-                <span class="muted">Related track IDs</span>
+                <span class="muted">Related tracks</span>
                 <strong id="security-related-tracks" class="diagnostic-value">--</strong>
               </div>
               <div class="status-detail">
-                <span class="muted">Evidence</span>
-                <strong id="security-evidence-summary" class="diagnostic-value">Tracks 0 | max age 0.0s | phones 0 | vehicles 0</strong>
+                <span class="muted">Evidence Summary</span>
+                <strong id="security-evidence-summary" class="diagnostic-value">No active tracks</strong>
               </div>
             </div>
           </div>
@@ -62,8 +73,6 @@
               <strong id="detection-vehicles" class="summary-value">0</strong>
             </div>
           </div>
-          <p id="detection-status" class="notice">Checking YOLO status...</p>
-          <p id="detection-error" class="muted"></p>
 
           <div class="diagnostics-grid three" style="margin-top: 16px">
             <div class="diagnostic-item">
@@ -71,7 +80,7 @@
               <strong id="diag-camera-opened" class="diagnostic-value">--</strong>
             </div>
             <div class="diagnostic-item">
-              <span class="muted">YOLO device</span>
+              <span class="muted">Device</span>
               <strong id="diag-selected-device" class="diagnostic-value">--</strong>
             </div>
             <div class="diagnostic-item">
@@ -80,25 +89,34 @@
             </div>
           </div>
 
-          <div class="diagnostics-grid two" style="margin-top: 10px">
+          <div class="diagnostics-grid two" style="margin-top: 12px">
             <div class="diagnostic-item">
-              <span class="muted">Tracked persons</span>
+              <span class="muted">Active tracks</span>
               <strong id="guard-track-count" class="diagnostic-value">0</strong>
             </div>
             <div class="diagnostic-item">
-              <span class="muted">Track IDs</span>
+              <span class="muted">Active Track IDs</span>
               <strong id="guard-track-ids" class="diagnostic-value">--</strong>
             </div>
           </div>
 
+          <p id="detection-status" class="notice">Checking YOLO status...</p>
+          <p id="detection-error" class="muted" style="font-size: 13px; text-align: center;"></p>
+
+          <!-- Guard Action Buttons -->
           <div class="actions">
-            <button class="button green" onclick="localAction('Guard action recorded locally: ALLOW')">ALLOW</button>
-            <button class="button red" onclick="localAction('Guard action recorded locally: DENY')">DENY</button>
-            <button class="button yellow" onclick="localAction('Guard action recorded locally: VERIFY ID')">VERIFY ID</button>
+            <button class="button green" onclick="localAction('Guard Action: ALLOW logged locally')">ALLOW</button>
+            <button class="button yellow" onclick="localAction('Guard Action: VERIFY ID logged locally')">VERIFY ID</button>
+            <button class="button red" onclick="localAction('Guard Action: DENY / ESCALATE logged locally')">DENY / ESCALATE</button>
           </div>
-          <p id="local-action" class="notice"></p>
+          
+          <p id="local-action" class="notice" style="color: var(--blue); margin-top: 14px; font-size: 13px;"></p>
         </article>
       </section>
+
+      <footer class="footer-disclaimer">
+        <strong>Disclaimer</strong>: This interface assists guards. It does not automatically approve or deny entry. The final gate control action is determined entirely by the human security guard.
+      </footer>
     </main>
 
     <script src="/dashboard/app.js"></script>

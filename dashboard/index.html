@@ -7,16 +7,27 @@
     <link rel="stylesheet" href="/dashboard/styles.css" />
   </head>
   <body>
+    <!-- Demo status strip for submission proposal review -->
+    <div class="demo-strip">
+      <div class="demo-strip-tags">
+        <span class="demo-tag">Local/offline prototype</span>
+        <span class="demo-tag">Human-in-the-loop</span>
+        <span class="demo-tag">No cloud dependency</span>
+        <span class="demo-tag">Temporary track IDs only</span>
+      </div>
+      <span class="muted" style="font-size: 11px;">Milestone 1G Submission Build</span>
+    </div>
+
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <span class="eyebrow">Security Rules Foundation</span>
-          <h1>SmartKUET Sentinel - Central Dashboard</h1>
-          <p class="muted">Milestone 1D monitoring with detection, tracking, security rules, diagnostics, and evidence capture.</p>
+          <span class="eyebrow">SmartKUET Sentinel</span>
+          <h1>Central Dashboard</h1>
+          <p class="muted">Offline Edge-AI Campus Security & Exam Integrity Assistant</p>
         </div>
         <nav class="nav" aria-label="Dashboard pages">
-          <a class="button" href="/guard">Guard</a>
-          <a class="button" href="/exam">Examiner</a>
+          <a class="button" href="/guard">Guard View</a>
+          <a class="button" href="/exam">Examiner View</a>
         </nav>
       </header>
 
@@ -27,12 +38,12 @@
             <span id="security-location" class="muted">KUET Main Gate</span>
           </div>
           <div id="security-card" class="status-card green">
-            <span class="badge green">security</span>
+            <span class="badge green">Security Alert</span>
             <h3 id="security-status">Waiting for event...</h3>
-            <p id="security-instruction" class="muted">Connecting to /ws/security</p>
-            <p class="muted">Confidence <strong id="security-confidence">--</strong></p>
+            <p id="security-instruction" class="muted">Connecting to /ws/security...</p>
+            <p class="muted" style="font-size: 13px;">Event confidence: <strong id="security-confidence">--</strong></p>
           </div>
-          <div class="diagnostics-grid two" style="margin-top: 12px">
+          <div class="diagnostics-grid two" style="margin-top: 14px">
             <div class="diagnostic-item">
               <span class="muted">Current level</span>
               <strong id="security-level" class="diagnostic-value">GREEN</strong>
@@ -56,22 +67,22 @@
         <article class="panel">
           <div class="panel-header">
             <h2>Exam Integrity Status</h2>
-            <span class="muted">Mock Worker</span>
+            <span class="muted">Mock Worker / Future Signal</span>
           </div>
           <div id="exam-card" class="status-card green">
-            <span class="badge green">exam</span>
+            <span class="badge green">Exam Alert</span>
             <h3 id="exam-status">Waiting for event...</h3>
-            <p class="muted">Seat <strong id="exam-seat">--</strong></p>
-            <p class="muted">Score <strong id="exam-score">0.0</strong> <span id="exam-added">+0.0</span></p>
+            <p class="muted" style="font-size: 13px;">Candidate Seat: <strong id="exam-seat">--</strong></p>
+            <p class="muted" style="font-size: 13px;">Suspicion score: <strong id="exam-score">0.0</strong> <span id="exam-added" style="font-weight: 700; color: var(--yellow-text);">+0.0</span></p>
           </div>
           <div id="exam-events" class="events" aria-live="polite"></div>
         </article>
       </section>
 
-      <section class="panel" style="margin-top: 16px">
+      <section class="panel" style="margin-top: 20px">
         <div class="panel-header">
-          <h2>Security Rules Panel</h2>
-          <button class="button" type="button" onclick="resetSecurityRules()">Reset Security Rule Cooldowns</button>
+          <h2>Security Rules Config & State</h2>
+          <button class="button" type="button" onclick="resetSecurityRules()">Reset Cooldowns</button>
         </div>
         <div class="summary-grid">
           <div class="summary-tile">
@@ -79,11 +90,11 @@
             <strong id="security-active-tracks" class="summary-value">0</strong>
           </div>
           <div class="summary-tile">
-            <span class="muted">Phones</span>
+            <span class="muted">Phones detected</span>
             <strong id="security-phones" class="summary-value">0</strong>
           </div>
           <div class="summary-tile">
-            <span class="muted">Vehicles</span>
+            <span class="muted">Vehicles detected</span>
             <strong id="security-vehicles" class="summary-value">0</strong>
           </div>
           <div class="summary-tile">
@@ -98,15 +109,18 @@
           </div>
           <div class="diagnostic-item">
             <span class="muted">Evidence summary</span>
-            <strong id="security-evidence-summary" class="diagnostic-value">Tracks 0 | max age 0.0s | phones 0 | vehicles 0</strong>
+            <strong id="security-evidence-summary" class="diagnostic-value">No active tracks</strong>
           </div>
         </div>
         <p id="security-rule-reset-result" class="notice"></p>
       </section>
 
-      <section class="panel" style="margin-top: 16px">
+      <section class="panel" style="margin-top: 20px">
         <div class="panel-header">
-          <h2>YOLO Detection Pipeline</h2>
+          <div>
+            <h2>Live Annotated Video Feed</h2>
+            <span class="muted" style="font-size: 13px; margin-top: 2px; display: block;">YOLO detections + temporary track IDs</span>
+          </div>
           <span id="detection-status" class="muted">Checking model status...</span>
         </div>
         <div class="summary-grid">
@@ -128,29 +142,29 @@
           </div>
         </div>
         <p id="detection-error" class="muted" style="margin-bottom: 12px">Waiting for detection summary...</p>
-        <img class="feed" src="/api/video_feed" alt="Live camera stream" />
+        <img class="feed" src="/api/video_feed" alt="Live camera stream with bounding boxes" />
       </section>
 
-      <section class="panel" style="margin-top: 16px">
+      <section class="panel" style="margin-top: 20px">
         <div class="panel-header">
-          <h2>Person Tracking</h2>
+          <h2>Temporary Motion Tracking</h2>
           <button class="button" type="button" onclick="resetTracker()">Reset Tracker</button>
         </div>
         <div class="summary-grid">
           <div class="summary-tile">
-            <span class="muted">Tracking</span>
+            <span class="muted">Tracking state</span>
             <strong id="tracking-enabled" class="summary-value">--</strong>
           </div>
           <div class="summary-tile">
-            <span class="muted">Tracker type</span>
+            <span class="muted">Tracker backend</span>
             <strong id="tracking-type" class="summary-value">--</strong>
           </div>
           <div class="summary-tile">
-            <span class="muted">Active persons</span>
+            <span class="muted">Active track count</span>
             <strong id="tracking-active" class="summary-value">0</strong>
           </div>
           <div class="summary-tile">
-            <span class="muted">Unique tracks</span>
+            <span class="muted">Total tracks seen</span>
             <strong id="tracking-total" class="summary-value">0</strong>
           </div>
         </div>
@@ -158,9 +172,9 @@
         <div id="tracking-list" class="events" aria-live="polite"></div>
       </section>
 
-      <section class="panel" style="margin-top: 16px">
+      <section class="panel" style="margin-top: 20px">
         <div class="panel-header">
-          <h2>Runtime Diagnostics</h2>
+          <h2>Runtime Diagnostics & Evidence Capture</h2>
           <button class="button" type="button" onclick="saveEvidenceSnapshot()">Save Evidence Snapshot</button>
         </div>
         <div class="diagnostics-grid">
@@ -209,12 +223,17 @@
             <strong id="diag-effective-fps" class="diagnostic-value">--</strong>
           </div>
           <div class="diagnostic-item">
-            <span class="muted">Status</span>
+            <span class="muted">Diagnostics Status</span>
             <strong id="diag-error" class="diagnostic-value">--</strong>
           </div>
         </div>
         <p id="snapshot-result" class="notice"></p>
       </section>
+
+      <!-- Centralized Human-in-the-loop Disclaimer -->
+      <footer class="footer-disclaimer">
+        <strong>Human-in-the-Loop AI Policy</strong>: AI flags events and highlights anomalies. The final operational decisions (e.g., admitting entrants, penalizing candidates) are made solely by authorized KUET guard or invigilator personnel.
+      </footer>
     </main>
 
     <script src="/dashboard/app.js"></script>

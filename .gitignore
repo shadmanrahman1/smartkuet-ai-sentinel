@@ -32,3 +32,8 @@ sample_videos/*
 !sample_videos/.gitkeep
 !sample_videos/README.md
 !sample_videos/ATTRIBUTION.md
+
+# Showcase frontend (Milestone 2A-UI)
+showcase-frontend/node_modules/
+showcase-frontend/dist/
+showcase-frontend/.vite/

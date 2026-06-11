@@ -6,10 +6,11 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1J-lite Practical Demo Reliability Improvements
+- Current milestone: Milestone 2A-UI Optional React Showcase Frontend
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
-- Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
+- Frontend stack (production/fallback): plain HTML, local CSS, and vanilla JavaScript in `dashboard/`. Routes `/`, `/guard`, `/exam` served directly by FastAPI. Always works offline.
+- Frontend stack (optional showcase): Vite + React in `showcase-frontend/`. Runs on port 5173. Uses Vite dev proxy to forward `/api` to FastAPI on port 8002. `node_modules/` and `dist/` are gitignored. No Next.js.
 - Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch.
 - YOLO is now included for object/person detection with runtime diagnostics, evidence capture, person tracking, and deterministic security event rules. No face recognition, InsightFace, MediaPipe, exam behavior scoring, training, or cloud APIs yet.
 
@@ -413,3 +414,44 @@ Known limitations:
 Next recommended milestone:
 
 - Submit for senior review. If accepted, commit and push. Then manual screenshot capture and submission package assembly.
+
+### 2026-06-11 - Milestone 2A-UI Optional React Showcase Frontend
+
+Added an optional Vite + React showcase frontend in `showcase-frontend/` for competition-grade presentation. The existing `dashboard/` HTML pages and FastAPI backend are completely untouched.
+
+**Architecture:**
+```
+FastAPI backend (port 8002) — real AI engine, tracking, rules, DB
+Vite/React      (port 5173) — optional showcase presentation layer
+dashboard/                  — plain HTML fallback (always works)
+```
+
+**Files created:**
+- `showcase-frontend/` — full Vite + React project
+  - `vite.config.js` — dev proxy `/api` → port 8002
+  - `src/index.css` — dark-mode command-center design system
+  - `src/api/client.js` — safe fetch + offline fallback data
+  - `src/components/NavBar.jsx`, `HumanInLoopBanner.jsx`, `SecurityLevelCard.jsx`, `TrackingPanel.jsx`, `MjpegFeed.jsx`
+  - `src/pages/Landing.jsx`, `SecurityRoom.jsx`, `GuardView.jsx`, `ExamView.jsx`
+  - `src/App.jsx` — hash-based router
+  - `public/favicon.svg` — SmartKUET shield icon
+  - `showcase-frontend/README.md`
+- Updated `.gitignore` to exclude `showcase-frontend/node_modules/`, `dist/`, `.vite/`
+- Updated `README.md` with optional showcase frontend section
+
+**Build/run verification:**
+- `npm install` — 135 packages, 0 vulnerabilities
+- `npm run build` — success, 228ms, 0 errors
+- `git status --ignored` — `node_modules/` and `dist/` confirmed ignored
+- Dev server: http://localhost:5173 → 200 OK, Vite ready in 400ms
+- Vite `/api` proxy verified: all proxied FastAPI endpoints return 200
+- Backend pytest: 57 passed, 1 warning (unchanged)
+
+**Git safety:**
+- `showcase-frontend/node_modules/` — gitignored ✅
+- `showcase-frontend/dist/` — gitignored ✅
+- Old `dashboard/` HTML files — untouched ✅
+
+Next recommended milestone:
+
+- Screenshot capture across all four showcase pages, final PDF/summary assembly, and live presentation practice.

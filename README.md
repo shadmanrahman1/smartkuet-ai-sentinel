@@ -269,4 +269,32 @@ The following documents compile the pitch, design, runbooks, and checklists for 
 
 ## Current Status
 
-Milestone 1J-lite (Practical Demo Reliability Improvements) is complete. GPU acceleration verified at ~62 FPS. Gate-zone ROI filtering, missed-frames pruning, and dual evidence snapshots added. Next step: manual screenshot capture, proposal PDF assembly, and live presentation practice.
+Milestone 2A-UI (React/Vite Showcase Frontend) in progress. Milestone 1J-lite complete and committed. GPU acceleration verified at ~85 FPS.
+
+## Optional Showcase Frontend (Milestone 2A-UI)
+
+A separate premium React/Vite showcase frontend lives in `showcase-frontend/`. It provides a competition-grade UI while keeping the existing dashboard and backend completely untouched.
+
+```txt
+FastAPI backend  (port 8002) — real AI engine
+Vite/React       (port 5173) — showcase presentation layer
+dashboard/       ——————————— plain HTML fallback (always works)
+```
+
+To run:
+
+```powershell
+# Terminal 1: backend
+.venv\Scripts\python -m uvicorn api.main:app --host 127.0.0.1 --port 8002
+
+# Terminal 2: showcase frontend
+cd showcase-frontend
+npm install
+npm run dev
+```
+
+Open: http://localhost:5173
+
+The showcase frontend shows four views: Landing, Security Control Room, Guard View, and Examiner View. When the backend is running, it displays live data. When offline, it shows polished demo placeholders — it never crashes.
+
+`showcase-frontend/node_modules/` and `showcase-frontend/dist/` are in `.gitignore`.

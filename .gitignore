@@ -37,3 +37,13 @@ sample_videos/*
 showcase-frontend/node_modules/
 showcase-frontend/dist/
 showcase-frontend/.vite/
+
+# Face verification — Milestone 2B (datasets, embeddings, gallery images, model cache)
+data/face_datasets/*
+!data/face_datasets/.gitkeep
+data/demo_face_gallery/*
+!data/demo_face_gallery/.gitkeep
+data/face_embeddings/*
+!data/face_embeddings/.gitkeep
+runs/face_verification/*
+!runs/face_verification/.gitkeep

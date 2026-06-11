@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { fetchSecurityStatus } from '../api/client';
 import { SecurityLevelCard } from '../components/SecurityLevelCard';
 import HumanInLoopBanner from '../components/HumanInLoopBanner';
+import FaceVerificationPanel from '../components/FaceVerificationPanel';
 
 const ACTION_HISTORY = [
   { time: '14:22', action: 'ALLOW',     note: 'KUET ID verified', color: 'var(--green)' },
@@ -142,6 +143,9 @@ export default function GuardView() {
         </div>
 
         <HumanInLoopBanner message="Gate control decisions (ALLOW / VERIFY ID / DENY) are the sole responsibility of the human security guard. AI alerts are advisory inputs only." />
+
+        {/* ── Face Verification Prototype ── */}
+        <FaceVerificationPanel online={online} />
       </div>
     </div>
   );

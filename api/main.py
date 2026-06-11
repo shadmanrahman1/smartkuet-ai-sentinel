@@ -13,6 +13,7 @@ from core.camera import CameraStream
 from core.config import ensure_project_dirs, get_runtime_info, settings
 from core.database import Database
 from core.detector import YOLODetector
+from core.face_verification import FaceVerificationService
 from core.security_rules import SecurityRulesEngine, select_highest_security_event
 from core.tracker import PersonTracker
 from core.video_processor import VideoProcessor
@@ -27,6 +28,7 @@ db = Database(settings.database_path)
 camera: CameraStream | None = None
 video_processor: VideoProcessor | None = None
 security_rules_engine: SecurityRulesEngine | None = None
+face_verification_service: FaceVerificationService | None = None
 
 
 def build_security_rules_engine() -> SecurityRulesEngine:
@@ -65,10 +67,21 @@ def create_security_incident_from_event(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global camera, video_processor, security_rules_engine
+    global camera, video_processor, security_rules_engine, face_verification_service
     ensure_project_dirs(settings)
     db.init_db()
     security_rules_engine = build_security_rules_engine()
+
+    # Face verification service (optional — graceful fallback if disabled/unavailable)
+    face_verification_service = FaceVerificationService(
+        gallery_dir=settings.face_gallery_dir,
+        embeddings_cache_path=settings.face_embeddings_cache,
+        insightface_cache_dir=settings.face_insightface_cache_dir,
+        model_name=settings.face_model_name,
+        threshold=settings.face_verification_threshold,
+        low_confidence_threshold=settings.face_low_confidence_threshold,
+    )
+
     camera = CameraStream(
         settings.camera_source,
         reconnect_seconds=settings.camera_reconnect_seconds,
@@ -114,6 +127,7 @@ async def lifespan(app: FastAPI):
         camera.release()
         camera = None
     security_rules_engine = None
+    face_verification_service = None
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -560,3 +574,70 @@ async def websocket_exam(websocket: WebSocket):
 @app.exception_handler(FileNotFoundError)
 async def not_found_handler(_, exc: FileNotFoundError):
     return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+# ── Face Verification API — Milestone 2B ─────────────────────────────────────
+
+@app.get("/api/face/status")
+async def face_status():
+    """Return face verification service status and model info."""
+    if face_verification_service is None:
+        return JSONResponse(content={
+            "model_loaded": False,
+            "model_name": settings.face_model_name,
+            "gallery_loaded": False,
+            "gallery_members": [],
+            "gallery_size": 0,
+            "enabled": settings.face_verification_enabled,
+            "note": "Service not initialized",
+        })
+    status = face_verification_service.get_status()
+    status["enabled"] = settings.face_verification_enabled
+    return JSONResponse(content=status)
+
+
+@app.get("/api/face/demo-members")
+async def face_demo_members():
+    """Return list of enrolled demo member labels (no real identity names)."""
+    if face_verification_service is None:
+        return JSONResponse(content={"members": [], "count": 0})
+    members = face_verification_service.get_demo_members()
+    return JSONResponse(content={"members": members, "count": len(members)})
+
+
+@app.post("/api/face/verify-image")
+async def face_verify_image(body: dict):
+    """
+    Verify a face in a local demo image.
+    Accepts: { "image_path": "data/demo_face_gallery/DemoMemberA/img_0.jpg" }
+    Only paths inside the project data/ directory are accepted.
+    """
+    if face_verification_service is None:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Face verification service not initialized"},
+        )
+
+    raw_path = body.get("image_path", "")
+    if not raw_path:
+        return JSONResponse(status_code=400, content={"error": "image_path required"})
+
+    # Path traversal protection: only allow paths under project data/ dir
+    try:
+        resolved = (PROJECT_ROOT / raw_path).resolve()
+        allowed_roots = [
+            (PROJECT_ROOT / "data").resolve(),
+            (PROJECT_ROOT / "sample_videos").resolve(),
+        ]
+        if not any(str(resolved).startswith(str(root)) for root in allowed_roots):
+            return JSONResponse(
+                status_code=403,
+                content={"error": "Path not allowed. Only data/ and sample_videos/ paths accepted."},
+            )
+        if not resolved.exists():
+            return JSONResponse(status_code=404, content={"error": f"File not found: {resolved.name}"})
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "Invalid path"})
+
+    result = face_verification_service.verify_image_path(resolved)
+    return JSONResponse(content=result.to_dict())

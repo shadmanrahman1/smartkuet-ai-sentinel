@@ -455,3 +455,58 @@ dashboard/                  — plain HTML fallback (always works)
 Next recommended milestone:
 
 - Screenshot capture across all four showcase pages, final PDF/summary assembly, and live presentation practice.
+
+### 2026-06-11 - Milestone 2B Open-Source Face Verification Prototype
+
+Added the first real face verification prototype using InsightFace + LFW open-source data.
+No real KUET data used. Enrolled gallery = LFW academic identities labeled "Demo Member A/B/C".
+
+**Architecture:**
+```
+CCTV frame → InsightFace (RetinaFace detect + ArcFace embed)
+→ cosine similarity vs enrolled gallery embeddings
+→ green (≥0.40) = Known Demo Member
+→ yellow (0.30–0.40) = Low Confidence / Manual Verify
+→ red (<0.30) = Unknown Visitor
+→ Guard makes final gate decision
+```
+
+**Files created:**
+- `docs/open_face_verification_prototype.md` — design doc, dataset roles, privacy framing
+- `core/face_verification.py` — FaceVerificationService, FaceVerificationResult dataclass
+- `scripts/prepare_lfw_demo_gallery.py` — LFW download + gallery image prep + enrollment
+- `tests/test_milestone_2b_face.py` — 21 new tests (mock-safe, no downloads required)
+- `showcase-frontend/src/components/FaceVerificationPanel.jsx` — React UI panel
+
+**Files modified:**
+- `core/config.py` — face verification config fields + ensure_project_dirs guard
+- `api/main.py` — FaceVerificationService in lifespan + /api/face/* routes
+- `.gitignore` — data/face_datasets/*, data/demo_face_gallery/*, data/face_embeddings/*, runs/face_verification/*
+- `requirements.txt` — insightface==1.0.1, onnxruntime==1.26.0, scikit-learn
+- `.env.example` — FACE_* configuration fields
+- `showcase-frontend/src/pages/GuardView.jsx` — FaceVerificationPanel added
+- `showcase-frontend/src/pages/Landing.jsx` — Face Verification feature card added
+
+**New API endpoints:**
+- `GET  /api/face/status` — model loaded, gallery size, threshold
+- `GET  /api/face/demo-members` — enrolled member labels
+- `POST /api/face/verify-image` — cosine similarity result with path traversal protection
+
+**Test results:**
+- pytest: 78 passed, 0 failed (57 prior + 21 new 2B tests)
+- npm run build: ✅ 27 modules, 0 errors, 131ms
+- Smoke test: all 8 endpoints → 200 OK
+- InsightFace buffalo_s: loaded and serving correctly
+
+**Known notes:**
+- InsightFace model auto-downloads to user home `.insightface/` on first run (INSIGHTFACE_HOME env var must be set before module load to redirect). Model works correctly regardless of location.
+- onnxruntime CPU only in test env (CUDA warning suppressed). Production GPU uses PyTorch/YOLO path.
+- Gallery is empty until `python scripts/prepare_lfw_demo_gallery.py` is run (LFW ~200MB download).
+
+**Current milestone:** Milestone 2B Open-Source Face Verification Prototype (branch: milestone-2b-open-face-verification)
+
+Next recommended milestone:
+
+- Run `scripts/prepare_lfw_demo_gallery.py` to populate gallery (requires internet for LFW download).
+- Screenshot face verification panel with green/yellow/red results for submission package.
+- Merge branch to main after senior review.

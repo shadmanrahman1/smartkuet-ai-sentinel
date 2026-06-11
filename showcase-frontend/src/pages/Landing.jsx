@@ -6,6 +6,7 @@ const FEATURES = [
   { icon: '🎯', title: 'Real-Time Detection', desc: 'YOLOv8n detects persons, phones, and vehicles at 60–85+ FPS using GPU acceleration.' },
   { icon: '🔢', title: 'Person Tracking', desc: 'IoU-based tracker assigns temporary IDs to monitor movement across consecutive frames.' },
   { icon: '🚦', title: 'Security Rules Engine', desc: 'Deterministic rules generate green/yellow/orange/red alerts for crowding, loitering, after-hours, and more.' },
+  { icon: '🔍', title: 'Face Verification', desc: 'InsightFace ArcFace embeddings compare CCTV faces against enrolled demo gallery. Green = known member, Red = unknown visitor.' },
   { icon: '📸', title: 'Evidence Capture', desc: 'Dual raw + annotated JPEG snapshots saved automatically for yellow/orange/red events.' },
   { icon: '🗺️', title: 'Gate-Zone ROI', desc: 'Configurable normalized bounding-box filter counts only tracks inside the campus gate area.' },
   { icon: '🔒', title: 'Offline First', desc: 'Zero cloud dependencies. Runs entirely on local hardware. No internet required in production.' },

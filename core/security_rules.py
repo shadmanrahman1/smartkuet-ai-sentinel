@@ -69,6 +69,11 @@ class SecurityRulesEngine:
         event_cooldown_seconds: float = 10.0,
         high_risk_cooldown_seconds: float = 5.0,
         location: str = "KUET Main Gate",
+        gate_zone_enabled: bool = False,
+        gate_zone_x1: float = 0.15,
+        gate_zone_y1: float = 0.20,
+        gate_zone_x2: float = 0.85,
+        gate_zone_y2: float = 1.00,
     ):
         self.rules_enabled = rules_enabled
         self.normal_start_hour = self._hour(normal_start_hour)
@@ -78,6 +83,11 @@ class SecurityRulesEngine:
         self.event_cooldown_seconds = max(0.0, float(event_cooldown_seconds))
         self.high_risk_cooldown_seconds = max(0.0, float(high_risk_cooldown_seconds))
         self.location = location
+        self.gate_zone_enabled = bool(gate_zone_enabled)
+        self.gate_zone_x1 = float(gate_zone_x1)
+        self.gate_zone_y1 = float(gate_zone_y1)
+        self.gate_zone_x2 = float(gate_zone_x2)
+        self.gate_zone_y2 = float(gate_zone_y2)
         self._last_emitted_at: dict[str, datetime] = {}
         self._last_current_events: list[dict[str, Any]] = []
 
@@ -168,10 +178,42 @@ class SecurityRulesEngine:
             "event_cooldown_seconds": self.event_cooldown_seconds,
             "high_risk_cooldown_seconds": self.high_risk_cooldown_seconds,
             "location": self.location,
+            "gate_zone_enabled": self.gate_zone_enabled,
+            "gate_zone_bbox_normalized": [
+                self.gate_zone_x1,
+                self.gate_zone_y1,
+                self.gate_zone_x2,
+                self.gate_zone_y2,
+            ],
         }
 
     def get_current_events(self) -> list[dict[str, Any]]:
         return copy_security_events(self._last_current_events)
+
+    def _track_in_gate_zone(self, track: dict[str, Any]) -> bool:
+        """Return True if the track bbox centre is inside the configured gate zone.
+
+        Coordinates are treated as normalised (0.0–1.0) frame fractions.
+        If the track has no bbox or the bbox values cannot be parsed, returns
+        True so the track is not silently dropped (safe fallback).
+        """
+        bbox = track.get("bbox")
+        if not bbox or len(bbox) < 4:
+            return True  # fallback: keep track if no bbox available
+        try:
+            x1, y1, x2, y2 = [float(v) for v in bbox[:4]]
+        except (TypeError, ValueError):
+            return True
+        cx = (x1 + x2) / 2.0
+        cy = (y1 + y2) / 2.0
+        # If bboxes look like pixel coords (any value > 1.5), skip gate-zone
+        # filtering — we only filter when coords are clearly normalised.
+        if max(abs(x1), abs(y1), abs(x2), abs(y2)) > 1.5:
+            return True
+        return (
+            self.gate_zone_x1 <= cx <= self.gate_zone_x2
+            and self.gate_zone_y1 <= cy <= self.gate_zone_y2
+        )
 
     def _metrics(
         self,
@@ -188,7 +230,14 @@ class SecurityRulesEngine:
         max_track_age = 0.0
         loitering_track_ids: list[int] = []
 
-        for track in tracks:
+        # Gate-zone filtering: when enabled, only count tracks in the ROI.
+        if self.gate_zone_enabled:
+            gate_tracks = [t for t in tracks if self._track_in_gate_zone(t)]
+        else:
+            gate_tracks = tracks
+        active_gate_track_count = len(gate_tracks)
+
+        for track in gate_tracks:
             age = self._float(track.get("age_seconds"))
             max_track_age = max(max_track_age, age)
             if age >= self.loiter_seconds:
@@ -204,8 +253,16 @@ class SecurityRulesEngine:
 
         return {
             "active_track_count": active_track_count,
-            "active_person_count": max(active_track_count, person_count),
-            "track_ids": self._track_ids(tracks),
+            "active_tracks_in_gate_zone": active_gate_track_count,
+            "gate_zone_enabled": self.gate_zone_enabled,
+            "gate_zone_bbox_normalized": [
+                self.gate_zone_x1,
+                self.gate_zone_y1,
+                self.gate_zone_x2,
+                self.gate_zone_y2,
+            ],
+            "active_person_count": max(active_gate_track_count, person_count),
+            "track_ids": self._track_ids(gate_tracks),
             "loitering_track_ids": loitering_track_ids,
             "max_track_age_seconds": round(max_track_age, 2),
             "person_count": person_count,
@@ -254,7 +311,7 @@ class SecurityRulesEngine:
     ) -> list[dict[str, Any]]:
         evidence = self._metrics(tracking_summary, detection_summary, camera_status, now)
         events: list[dict[str, Any]] = []
-        active_track_count = evidence["active_track_count"]
+        active_track_count = evidence["active_tracks_in_gate_zone"] if evidence["gate_zone_enabled"] else evidence["active_track_count"]
         active_person_count = evidence["active_person_count"]
         after_hours = evidence["after_hours"]
         crowding = active_track_count >= self.crowding_person_threshold

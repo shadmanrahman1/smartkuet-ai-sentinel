@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 1I Final Repository QA and Optional Screenshot Capture
+- Current milestone: Milestone 1J-lite Practical Demo Reliability Improvements
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack: plain HTML, local CSS, and vanilla JavaScript. No React or Next.js.
@@ -370,3 +370,46 @@ Next recommended milestone:
 
 - Manual submission package assembly and presentation practice.
 
+### 2026-06-11 - CUDA Environment Upgrade (Environment-only, not committed)
+
+Upgraded local PyTorch from CPU-only to CUDA 12.8 GPU acceleration.
+
+- Uninstalled `torch 2.12.0+cpu` and installed `torch 2.11.0+cu128` from `https://download.pytorch.org/whl/cu128`.
+- Pip cache kept in `.cache\pip` on F: drive (not C:).
+- Verified `torch.cuda.is_available() = True`, GPU = NVIDIA GeForce RTX 3050 Laptop GPU, 4 GB VRAM.
+- Validation benchmark after CUDA: ~62 FPS, ~11.69 ms average inference.
+- No source files changed. No commit made. `.venv` is in `.gitignore`.
+
+### 2026-06-11 - Milestone 1J-lite Practical Demo Reliability Improvements
+
+Added four practical reliability improvements without destabilizing the accepted 1I state.
+
+1. **CUDA setup documentation** — Created [docs/local_cuda_setup.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/local_cuda_setup.md) with verified steps, rollback instructions, and rules (no commit of .venv or .cache).
+
+2. **Gate-zone ROI filtering** — Added `GATE_ZONE_ENABLED`, `GATE_ZONE_X1/Y1/X2/Y2` config fields (normalized 0.0–1.0 frame fractions) to `core/config.py` and `.env.example`. `SecurityRulesEngine` now filters active tracks to only those whose bbox centre falls inside the configured zone. Crowding and loitering rules use gate-zone-filtered track counts. Pixel-coordinate bboxes (values > 1.5) fall back to "inside" to prevent silent track drops. Old evidence fields preserved; added `active_tracks_in_gate_zone` and `gate_zone_bbox_normalized`.
+
+3. **Missed-frames pruning** — Added `MAX_TRACK_MISSED_FRAMES=10` config to `core/config.py`, `.env.example`. `PersonTracker._prune_old_tracks` now removes tracks when `missed_frames > max_missed_frames` OR age exceeds `max_age_seconds`. Reduces ghost tracks in demo. `get_status()` now also reports `max_missed_frames`.
+
+4. **Raw + annotated evidence snapshots** — `VideoProcessor._save_security_event_frame` now saves both `security_event_TIMESTAMP_annotated.jpg` and `security_event_TIMESTAMP_raw.jpg`. Annotated path is the main `snapshot_path` (DB backward compatible). Raw path added to event evidence as `raw_snapshot_path` when available.
+
+Other changes:
+- Updated `api/main.py` to pass gate-zone params to `SecurityRulesEngine` and `max_missed_frames` to `PersonTracker`.
+- Updated `scripts/check_runtime.py` with gate-zone config display.
+- Updated `README.md` with hardware target (CUDA verified), CUDA setup link, and 1J-lite status.
+- Added `tests/test_milestone_1j_lite.py` with 11 new tests.
+
+Tests and diagnostics:
+
+- `pytest`: **57 passed, 1 warning** (up from 46).
+- `check_runtime.py`: GATE_ZONE_ENABLED displayed, MAX_TRACK_MISSED_FRAMES displayed.
+- Validation: ~62 FPS, ~11.69 ms inference (GPU active).
+- `git status`: clean before any commit.
+
+Known limitations:
+
+- Gate-zone ROI only filters normalised bboxes. Pixel-coord bboxes from the tracker bypass gate-zone filtering (safe fallback; fix would require normalising bboxes in video_processor, deferred).
+- CUDA installed locally; not part of the committed project — documented in `docs/local_cuda_setup.md`.
+
+Next recommended milestone:
+
+- Submit for senior review. If accepted, commit and push. Then manual screenshot capture and submission package assembly.

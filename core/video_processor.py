@@ -157,17 +157,37 @@ class VideoProcessor:
             return None
 
         stamp = self._timestamp_stamp(event.get("timestamp"))
-        path = self.evidence_dir / f"security_event_{stamp}.jpg"
-        image = frame.copy() if frame is not None else None
-        if image is None:
-            image = self.get_latest_annotated_frame()
-        if image is None:
-            image = self.fallback_frame()
+        annotated_path = self.evidence_dir / f"security_event_{stamp}_annotated.jpg"
+        raw_path = self.evidence_dir / f"security_event_{stamp}_raw.jpg"
 
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if not cv2.imwrite(str(path), image):
+        # Resolve annotated frame (prefer the passed frame, then latest annotated, then fallback)
+        annotated_image = frame.copy() if frame is not None else None
+        if annotated_image is None:
+            annotated_image = self.get_latest_annotated_frame()
+        if annotated_image is None:
+            annotated_image = self.fallback_frame()
+
+        annotated_path.parent.mkdir(parents=True, exist_ok=True)
+        if not cv2.imwrite(str(annotated_path), annotated_image):
             return None
-        return self._display_path(path)
+
+        # Also save raw frame when available
+        raw_saved_path: str | None = None
+        with self._lock:
+            raw_frame = (
+                self._latest_raw_frame.copy()
+                if self._latest_raw_frame is not None
+                else None
+            )
+        if raw_frame is not None:
+            if cv2.imwrite(str(raw_path), raw_frame):
+                raw_saved_path = self._display_path(raw_path)
+
+        # Store raw path in evidence dict for downstream consumers (non-destructive)
+        if raw_saved_path is not None:
+            event["raw_snapshot_path"] = raw_saved_path
+
+        return self._display_path(annotated_path)
 
     def _record_security_events(
         self,

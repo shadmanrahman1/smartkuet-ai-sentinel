@@ -69,6 +69,14 @@ class Settings:
     security_location: str = "KUET Main Gate"
     security_save_event_snapshot: bool = True
     demo_profile: str = "gate_daytime"
+    # Gate-zone ROI filtering (normalized 0.0–1.0 frame fractions)
+    gate_zone_enabled: bool = True
+    gate_zone_x1: float = 0.15
+    gate_zone_y1: float = 0.20
+    gate_zone_x2: float = 0.85
+    gate_zone_y2: float = 1.00
+    # Tracker missed-frames pruning
+    max_track_missed_frames: int = 10
 
 
 def ensure_project_dirs(config: Settings) -> None:
@@ -215,6 +223,12 @@ def load_settings() -> Settings:
             os.getenv("SECURITY_SAVE_EVENT_SNAPSHOT", "true")
         ),
         demo_profile=os.getenv("DEMO_PROFILE", "gate_daytime"),
+        gate_zone_enabled=_bool(os.getenv("GATE_ZONE_ENABLED", "true")),
+        gate_zone_x1=float(os.getenv("GATE_ZONE_X1", "0.15")),
+        gate_zone_y1=float(os.getenv("GATE_ZONE_Y1", "0.20")),
+        gate_zone_x2=float(os.getenv("GATE_ZONE_X2", "0.85")),
+        gate_zone_y2=float(os.getenv("GATE_ZONE_Y2", "1.00")),
+        max_track_missed_frames=max(1, int(os.getenv("MAX_TRACK_MISSED_FRAMES", "10"))),
     )
     ensure_project_dirs(config)
     return config

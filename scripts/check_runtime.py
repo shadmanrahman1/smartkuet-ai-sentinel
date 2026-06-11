@@ -48,6 +48,10 @@ def main() -> None:
     print(f"SECURITY_EVENT_COOLDOWN_SECONDS: {settings.security_event_cooldown_seconds}")
     print(f"SECURITY_HIGH_RISK_COOLDOWN_SECONDS: {settings.security_high_risk_cooldown_seconds}")
     print(f"SECURITY_SAVE_EVENT_SNAPSHOT: {settings.security_save_event_snapshot}")
+    print(f"GATE_ZONE_ENABLED: {settings.gate_zone_enabled}")
+    if settings.gate_zone_enabled:
+        print(f"GATE_ZONE_ROI (normalized): x1={settings.gate_zone_x1} y1={settings.gate_zone_y1} x2={settings.gate_zone_x2} y2={settings.gate_zone_y2}")
+    print(f"MAX_TRACK_MISSED_FRAMES: {settings.max_track_missed_frames}")
     print("Project runtime directories:")
     for name, path in paths.items():
         print(f"  {name}: {path} exists={path.exists()}")

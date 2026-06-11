@@ -1,6 +1,6 @@
 # SmartKUET Sentinel
 
-SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is **Milestone 1I** (Final Repository QA): YOLO detection, person tracking, deterministic security rules, evidence capture, runtime diagnostics, validation reporting, polished dashboards, and a full submission documentation pack — all running locally with no cloud dependencies.
+SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is **Milestone 1J-lite** (Practical Demo Reliability Improvements): YOLO detection with GPU acceleration, person tracking with ghost-track pruning, gate-zone ROI filtering, deterministic security rules, dual raw+annotated evidence snapshots, runtime diagnostics, validation reporting, polished dashboards, and a full submission documentation pack — all running locally with no cloud dependencies.
 
 ## Core Features
 
@@ -53,9 +53,11 @@ Yellow, orange, and red rule events can create DB incidents and evidence snapsho
 
 ## Hardware Target
 
-- Primary target: RTX 3050 4GB laptop GPU after manual CUDA-enabled PyTorch install.
-- Current fallback: CPU-only inference is supported, but slower.
-- Do not install CUDA automatically from this project. Use the official PyTorch selector and choose the command matching the local NVIDIA driver, Python, pip, and CUDA runtime.
+- Primary target: RTX 3050 4GB laptop GPU with CUDA-enabled PyTorch.
+- CUDA verified working: `torch 2.11.0+cu128`, `cuda: True`, `~62 FPS` on demo video, `~11.7 ms` avg inference.
+- CPU fallback: fully supported. All tests pass on CPU. Slower (~10–20 FPS).
+- Do not install CUDA automatically from this project. Use the official PyTorch selector.
+- See [docs/local_cuda_setup.md](docs/local_cuda_setup.md) for the verified CUDA install steps and rollback instructions.
 
 ## Local Drive Setup
 
@@ -262,8 +264,9 @@ The following documents compile the pitch, design, runbooks, and checklists for 
 * **Demo Runbook**: [docs/demo_runbook.md](docs/demo_runbook.md) — Developer checklists, run commands, and screenshot guides.
 * **Submission Pitch**: [docs/submission_pitch.md](docs/submission_pitch.md) — Innovation concept proposal detail.
 * **Final QA Report**: [docs/final_qa_report.md](docs/final_qa_report.md) — Repository QA audit and presentation checklist.
+* **Local CUDA Setup**: [docs/local_cuda_setup.md](docs/local_cuda_setup.md) — Optional GPU acceleration guide with verified steps and CPU rollback.
 * **Video Attributions**: [sample_videos/ATTRIBUTION.md](sample_videos/ATTRIBUTION.md) — Dataset licenses and privacy standards.
 
 ## Current Status
 
-Milestone 1I (Final Repository QA) is complete. The repository is submission-ready. Next step: manual screenshot capture, proposal PDF assembly, and live presentation practice.
+Milestone 1J-lite (Practical Demo Reliability Improvements) is complete. GPU acceleration verified at ~62 FPS. Gate-zone ROI filtering, missed-frames pruning, and dual evidence snapshots added. Next step: manual screenshot capture, proposal PDF assembly, and live presentation practice.

@@ -77,6 +77,7 @@ class PersonTracker:
         iou_threshold: float = 0.5,
         person_class_name: str = "person",
         min_confidence: float = 0.35,
+        max_missed_frames: int = 10,
     ):
         self.requested_tracker_type = tracker_type
         self.backend = "iou_fallback"
@@ -84,6 +85,7 @@ class PersonTracker:
         self.iou_threshold = iou_threshold
         self.person_class_name = person_class_name
         self.min_confidence = min_confidence
+        self.max_missed_frames = max(1, int(max_missed_frames))
         self._tracks: dict[int, TrackState] = {}
         self._next_track_id = 1
         self.total_tracks_seen = 0
@@ -117,7 +119,10 @@ class PersonTracker:
         expired_ids = [
             track_id
             for track_id, track in self._tracks.items()
-            if (now - track.last_seen_dt).total_seconds() > self.max_age_seconds
+            if (
+                (now - track.last_seen_dt).total_seconds() > self.max_age_seconds
+                or track.missed_frames > self.max_missed_frames
+            )
         ]
         for track_id in expired_ids:
             self._tracks.pop(track_id, None)
@@ -180,6 +185,7 @@ class PersonTracker:
             "total_tracks_seen": self.total_tracks_seen,
             "active_tracks": self.active_tracks,
             "max_age_seconds": self.max_age_seconds,
+            "max_missed_frames": self.max_missed_frames,
             "iou_threshold": self.iou_threshold,
             "last_error": self.last_error,
         }

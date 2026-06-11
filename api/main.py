@@ -39,6 +39,11 @@ def build_security_rules_engine() -> SecurityRulesEngine:
         event_cooldown_seconds=settings.security_event_cooldown_seconds,
         high_risk_cooldown_seconds=settings.security_high_risk_cooldown_seconds,
         location=settings.security_location,
+        gate_zone_enabled=settings.gate_zone_enabled,
+        gate_zone_x1=settings.gate_zone_x1,
+        gate_zone_y1=settings.gate_zone_y1,
+        gate_zone_x2=settings.gate_zone_x2,
+        gate_zone_y2=settings.gate_zone_y2,
     )
 
 
@@ -85,6 +90,7 @@ async def lifespan(app: FastAPI):
                 iou_threshold=settings.track_iou,
                 person_class_name=settings.track_person_class_name,
                 min_confidence=settings.track_conf,
+                max_missed_frames=settings.max_track_missed_frames,
             )
         video_processor = VideoProcessor(
             camera=camera,

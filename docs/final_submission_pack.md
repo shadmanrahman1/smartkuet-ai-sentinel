@@ -32,7 +32,7 @@ SmartKUET Sentinel resolves these issues by implementing a local, **offline-firs
 *   **Average YOLO CPU Inference Latency**: ~37.04 ms per frame (after lazy-loading warmup).
 *   **Pipeline Processing FPS**: ~46.54 FPS.
 *   **Security rule triggers**: Successfully recorded Crowd and Normal activities.
-*   **Unit and Integration Testing**: 40 unit and integration tests written and passing successfully.
+*   **Unit and Integration Testing**: 46 unit and integration tests written and passing successfully.
 
 ## Recommended Dashboard Pages to Present
 *   **Central Dashboard**: `http://127.0.0.1:8002/` (Visualizes YOLO bounding boxes, tracking logs, incident updates, and hardware diagnostics).
@@ -78,10 +78,10 @@ SmartKUET Sentinel resolves these issues by implementing a local, **offline-firs
 ## Limitations & Future Scope
 1.  **CPU-Only Fallback**: Inference is configured for CPU fallback by default, though optimized to run at ~35-50 FPS. Scale-out deployments will utilize CUDA-enabled laptops (e.g. RTX 3050).
 2.  **Mock Invigilation Hall**: Exam integrity checks are currently mock-only. Future scope includes training a spatial-temporal action recognition model to classify cheating gestures locally.
-3.  **Local Face Verification Database**: A future module will include a local student enrollment database. Students can opt-in to register their faces locally for touchless identity check-in at library/hall gates.
+3.  **Future Identity Verification**: Any future identity verification capability would require explicit student consent, KUET administration approval, an independent privacy review, and strictly local-only storage — with no facial data sent to any network, cloud, or third-party service.
 
 ## Final Pre-Submission Checklist
-- [x] All 40 unit and integration tests pass successfully (`pytest`).
+- [x] All 46 unit and integration tests pass successfully (`pytest`).
 - [x] Verified `print_demo_checklist.py` outputs all checks successfully.
 - [x] Verified `check_runtime.py` confirms all paths and directories exist locally.
 - [x] Ensure uvicorn server has been shut down and ports `8001` and `8002` are clean.

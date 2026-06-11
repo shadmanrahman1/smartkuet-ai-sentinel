@@ -1,8 +1,8 @@
 # SmartKUET Sentinel
 
-SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is Milestone 1D: security event rules on top of YOLO detection, person tracking, stable video input, diagnostics, benchmarking, and evidence capture.
+SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is **Milestone 1I** (Final Repository QA): YOLO detection, person tracking, deterministic security rules, evidence capture, runtime diagnostics, validation reporting, polished dashboards, and a full submission documentation pack — all running locally with no cloud dependencies.
 
-## Milestone 1D Scope
+## Core Features
 
 - FastAPI app with dashboard, health, database, MJPEG, WebSocket, detection, tracking, security rules, camera, video, runtime, and evidence routes.
 - Robust OpenCV camera input for webcam index, local video files, phone/IP camera URLs, and RTSP/CCTV URLs.
@@ -248,20 +248,22 @@ Three sample frames from different stages of the video are annotated and saved t
 
 To protect the privacy of campus members and ensure professional standards:
 * **Private Faces**: Do not upload or record footage showing private faces without explicit consent, especially if dashboard screenshots or visual reports will be published.
-* **Public Sample Video Attribution**: If you are using open-source validation assets (such as the Intel IoT DevKit sample videos), make sure to reference [sample_videos/ATTRIBUTION.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/sample_videos/ATTRIBUTION.md).
+* **Public Sample Video Attribution**: If you are using open-source validation assets (such as the Intel IoT DevKit sample videos), make sure to reference [sample_videos/ATTRIBUTION.md](sample_videos/ATTRIBUTION.md).
 * **Consented Local Footage**: For the final project submission or live presentation, we strongly recommend recording your own local gate footage with consented participants.
 * **Temporary Track IDs**: Remember that track IDs (like `ID 1`, `ID 2`) are temporary indicators to trace motion across adjacent frames and do not represent student identity or permanent profiles.
 
 ## Final Submission Pack
 
 The following documents compile the pitch, design, runbooks, and checklists for the KUET innovation submission:
-* **Final Submission Pack**: [docs/final_submission_pack.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/final_submission_pack.md) — Implemented features, validation results, and checklists.
-* **Spoken Demo Script**: [docs/demo_script.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_script.md) — Presenter script for a 2.5-minute pitch video.
-* **Judges Q&A Prep**: [docs/judges_qna.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/judges_qna.md) — Anticipated questions and strong responses.
-* **Technical Architecture**: [docs/technical_architecture.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/technical_architecture.md) — System flow diagram and architectural layers.
-* **Demo Runbook**: [docs/demo_runbook.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/demo_runbook.md) — Developer checklists, run commands, and screenshot guides.
-* **Submission Pitch**: [docs/submission_pitch.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/submission_pitch.md) — Innovation concept proposal detail.
-* **Video Attributions**: [sample_videos/ATTRIBUTION.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/sample_videos/ATTRIBUTION.md) — Dataset licenses and privacy standards.
+* **Final Submission Pack**: [docs/final_submission_pack.md](docs/final_submission_pack.md) — Implemented features, validation results, and checklists.
+* **Spoken Demo Script**: [docs/demo_script.md](docs/demo_script.md) — Presenter script for a 2.5-minute pitch video.
+* **Judges Q&A Prep**: [docs/judges_qna.md](docs/judges_qna.md) — Anticipated questions and strong responses.
+* **Technical Architecture**: [docs/technical_architecture.md](docs/technical_architecture.md) — System flow diagram and architectural layers.
+* **Demo Runbook**: [docs/demo_runbook.md](docs/demo_runbook.md) — Developer checklists, run commands, and screenshot guides.
+* **Submission Pitch**: [docs/submission_pitch.md](docs/submission_pitch.md) — Innovation concept proposal detail.
+* **Final QA Report**: [docs/final_qa_report.md](docs/final_qa_report.md) — Repository QA audit and presentation checklist.
+* **Video Attributions**: [sample_videos/ATTRIBUTION.md](sample_videos/ATTRIBUTION.md) — Dataset licenses and privacy standards.
 
-## Next Recommended Milestone
-Milestone 1H: Final Submission Asset Pack — screenshots, demo summary, proposal PDF/README polish, and final repository cleanup.
+## Current Status
+
+Milestone 1I (Final Repository QA) is complete. The repository is submission-ready. Next step: manual screenshot capture, proposal PDF assembly, and live presentation practice.

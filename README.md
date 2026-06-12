@@ -1,6 +1,6 @@
 # SmartKUET Sentinel
 
-SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is **Milestone 1J-lite** (Practical Demo Reliability Improvements): YOLO detection with GPU acceleration, person tracking with ghost-track pruning, gate-zone ROI filtering, deterministic security rules, dual raw+annotated evidence snapshots, runtime diagnostics, validation reporting, polished dashboards, and a full submission documentation pack — all running locally with no cloud dependencies.
+SmartKUET Sentinel is an offline Edge-AI campus security and exam integrity assistant for KUET. The current build is **Milestone 2E** (Actual Validation Snapshot & Performance Freeze): YOLO detection and tracking, gate-zone rules, local InsightFace/LFW face verification, an explainable multi-modal risk fusion engine, a premium React showcase dashboard, and a competition presentation pack — all running locally with no cloud dependencies.
 
 ## Core Features
 
@@ -267,9 +267,32 @@ The following documents compile the pitch, design, runbooks, and checklists for 
 * **Local CUDA Setup**: [docs/local_cuda_setup.md](docs/local_cuda_setup.md) — Optional GPU acceleration guide with verified steps and CPU rollback.
 * **Video Attributions**: [sample_videos/ATTRIBUTION.md](sample_videos/ATTRIBUTION.md) — Dataset licenses and privacy standards.
 
-## Current Status
+## Current Status & Freeze (Milestone 2E)
 
-Milestone 2A-UI (React/Vite Showcase Frontend) in progress. Milestone 1J-lite complete and committed. GPU acceleration verified at ~85 FPS.
+SmartKUET Sentinel is now feature-complete, frozen, and fully validated for competition demonstration and research publication.
+
+* **Measured Validation Snapshot**: See the detailed [docs/validation_snapshot_2e.md](docs/validation_snapshot_2e.md) for local performance vitals and route responses.
+* **Biometric & Fusion Presentation Pack**:
+  * **Evaluation Protocol**: [docs/evaluation_protocol.md](docs/evaluation_protocol.md)
+  * **Demo Script & Pitch Flow**: [docs/final_demo_script_2e.md](docs/final_demo_script_2e.md)
+  * **Judges Q&A Preparation**: [docs/judges_qna_2e.md](docs/judges_qna_2e.md)
+  * **Slide Checklist**: [docs/screenshot_checklist_2e.md](docs/screenshot_checklist_2e.md)
+  * **Research Paper Skeleton**: [docs/research_paper_skeleton.md](docs/research_paper_skeleton.md)
+
+### Current Feature List
+1. **Edge-AI Detection & Tracking**: Real-time YOLOv8 person detection and ByteTrack object tracking.
+2. **Deterministic Security Rules**: Gate-zone ROI filtering, crowding/loitering alarms, and schedule controls.
+3. **Face Verification Engine**: Cosine similarity matching utilizing local InsightFace (`buffalo_s`) on an open-source LFW-based mock demo gallery.
+4. **Multi-Modal Risk Fusion**: Expert engine calculating explaining advisory risk scores (LOW, MEDIUM, HIGH, CRITICAL) combining camera health, schedule, face match status, and active YOLO tracking.
+5. **Polished React Showcase Frontend**: An offline-first modern React/Vite security cockpit connecting to live FastAPI uvicorn services.
+
+### Privacy & Human-in-the-Loop Disclaimer
+* **Offline Processing**: All algorithms, image analysis, and state evaluations run locally on the edge processor. No external telemetry or cloud databases are used.
+* **Mock Gallery**: The biometric gallery uses open-source LFW mock identities. Real KUET student biometrics are neither stored nor parsed.
+* **Advisory Only**: The risk fusion engine output is advisory (`human_review_required: true`). The ultimate decision to lock/unlock gates resides with the human security operator.
+
+### Research Direction
+Our research targets publications in local and international computer science journals, framing this work as *"A Local-First, Privacy-Preserving Multi-Modal Risk Fusion System for Academic Campus Access Control."* Future directions include training the scaffolded YOLO object-cue class detector on local campus badges/lanyards and scaling biometric matches to FAISS vector search.
 
 ## Optional Showcase Frontend (Milestone 2A-UI)
 

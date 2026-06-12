@@ -6,13 +6,15 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 2B Open-Source Face Verification Prototype (branch: milestone-2b-open-face-verification)
+- Current milestone: Milestone 2C Local Object-Cue Detection Scaffold (branch: milestone-2c-object-cues)
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack (production/fallback): plain HTML, local CSS, and vanilla JavaScript in `dashboard/`. Routes `/`, `/guard`, `/exam` served directly by FastAPI. Always works offline.
 - Frontend stack (optional showcase): Vite + React in `showcase-frontend/`. Runs on port 5173. Uses Vite dev proxy to forward `/api` to FastAPI on port 8002. `node_modules/` and `dist/` are gitignored. No Next.js.
 - Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch, InsightFace.
 - YOLO is included for object/person detection, tracking, and security event rules. InsightFace is included for local face verification vs LFW demo gallery. No MediaPipe, exam behavior scoring, training, or cloud APIs yet.
+- Milestone 2C adds local-only object cue detection scaffolding (ID-card, lanyard, visitor badge, bag, helmet) with supporting security-risk signals.
+
 
 ## Current Implementation
 
@@ -503,10 +505,36 @@ CCTV frame → InsightFace (RetinaFace detect + ArcFace embed)
 - onnxruntime CPU only in test env (CUDA warning suppressed). Production GPU uses PyTorch/YOLO path.
 - Gallery is empty until `python scripts/prepare_lfw_demo_gallery.py` is run (LFW ~200MB download).
 
-**Current milestone:** Milestone 2B Open-Source Face Verification Prototype (branch: milestone-2b-open-face-verification)
+**Current milestone:** Milestone 2C Local Object-Cue Detection Scaffold (branch: milestone-2c-object-cues)
 
 Next recommended milestone:
 
-- Run `scripts/prepare_lfw_demo_gallery.py` to populate gallery (requires internet for LFW download).
-- Screenshot face verification panel with green/yellow/red results for submission package.
-- Merge branch to main after senior review.
+- Milestone 2C Phase 3: Add React Object Cues panel to the optional showcase frontend.
+- Milestone 2D: Risk Fusion Engine combining face status, object cues, tracking, and time rules.
+
+### 2026-06-12 - Milestone 2C Phase 1 & 2 Local Object-Cue Detection Scaffold
+
+Researched open-source Roboflow Universe dataset candidates and implemented a safe, offline, local-only object cue detection scaffold.
+
+1. **Research & Curation**:
+   * Evaluated candidate datasets on Roboflow Universe and documented findings in `docs/roboflow_object_cue_research.md`.
+   * Curated candidates for ID-card, lanyard, name-badge, backpack/bag (pre-trained COCO), helmet (occlusion context), and uniforms/logos.
+   * Defined system safety principles: object cues are supporting evidence only, known/unknown identity checks are handled by InsightFace/LFW, and human guard retains override controls.
+
+2. **Configuration & Paths**:
+   * Added `ROBOFLOW_OBJECT_CUES_ENABLED`, `ROBOFLOW_OBJECT_CUE_MODEL_PATH`, and `ROBOFLOW_OBJECT_CUE_CLASSES` configuration fields in `core/config.py` and `.env.example`.
+   * Updated `ensure_project_dirs` to create `models/object_cues`, `data/roboflow_datasets`, and `runs/object_cues` locally.
+
+3. **Repository Directory Structure**:
+   * Updated `.gitignore` to unignore subdirectories while ignoring wildcards (e.g. weights `*.pt`, datasets `*`, runs `*`).
+   * Created empty `.gitkeep` placeholder files under `models/object_cues/`, `data/roboflow_datasets/`, and `runs/object_cues/` to track directory structures.
+
+4. **Service & APIs**:
+   * Implemented `ObjectCueDetectionService` in `core/object_cue_detection.py` returning `DISABLED`, `MODEL_NOT_CONFIGURED`, or `READY` statuses.
+   * Integrated service in app lifespan context and exposed `GET /api/object-cues/status` in `api/main.py`.
+
+5. **Diagnostics & Tests**:
+   * Updated `scripts/check_runtime.py` to print object cue diagnostics.
+   * Added 5 scaffold tests in `tests/test_milestone_2c_scaffold.py`. All tests passed (83 total passed, 0 failures).
+   * Completed API smoke test verifying 200 OK across `/health`, `/api/runtime/status`, `/api/security/status`, `/api/face/status`, and `/api/object-cues/status`.
+

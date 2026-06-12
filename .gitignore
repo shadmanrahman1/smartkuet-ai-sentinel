@@ -47,3 +47,16 @@ data/face_embeddings/*
 !data/face_embeddings/.gitkeep
 runs/face_verification/*
 !runs/face_verification/.gitkeep
+
+# Object cues — Milestone 2C
+!models/object_cues/
+models/object_cues/*
+!models/object_cues/.gitkeep
+
+!data/roboflow_datasets/
+data/roboflow_datasets/*
+!data/roboflow_datasets/.gitkeep
+
+!runs/object_cues/
+runs/object_cues/*
+!runs/object_cues/.gitkeep

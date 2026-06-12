@@ -52,6 +52,10 @@ def main() -> None:
     if settings.gate_zone_enabled:
         print(f"GATE_ZONE_ROI (normalized): x1={settings.gate_zone_x1} y1={settings.gate_zone_y1} x2={settings.gate_zone_x2} y2={settings.gate_zone_y2}")
     print(f"MAX_TRACK_MISSED_FRAMES: {settings.max_track_missed_frames}")
+    print(f"ROBOFLOW_OBJECT_CUES_ENABLED: {settings.roboflow_object_cues_enabled}")
+    print(f"ROBOFLOW_OBJECT_CUE_MODEL_PATH: {settings.roboflow_object_cue_model_path}")
+    print(f"ROBOFLOW_OBJECT_CUE_CLASSES: {','.join(settings.roboflow_object_cue_classes)}")
+    print(f"OBJECT_CUE_MODEL_EXISTS: {settings.roboflow_object_cue_model_path.exists() if settings.roboflow_object_cue_model_path else False}")
     print("Project runtime directories:")
     for name, path in paths.items():
         print(f"  {name}: {path} exists={path.exists()}")

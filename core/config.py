@@ -1,7 +1,7 @@
 import os
 import platform
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Union
 
@@ -85,6 +85,10 @@ class Settings:
     face_low_confidence_threshold: float = 0.30
     face_model_name: str = "buffalo_s"
     face_insightface_cache_dir: Path = None  # type: ignore[assignment]
+    # Object Cues — Milestone 2C
+    roboflow_object_cues_enabled: bool = False
+    roboflow_object_cue_model_path: Path = None  # type: ignore[assignment]
+    roboflow_object_cue_classes: list[str] = field(default_factory=list)
 
 
 def ensure_project_dirs(config: Settings) -> None:
@@ -116,6 +120,9 @@ def ensure_project_dirs(config: Settings) -> None:
         config.face_embeddings_cache.parent if config.face_embeddings_cache else None,
         config.face_insightface_cache_dir,
         config.runs_dir / "face_verification",
+        config.roboflow_object_cue_model_path.parent if config.roboflow_object_cue_model_path else None,
+        config.data_dir / "roboflow_datasets",
+        config.runs_dir / "object_cues",
     ]
     for path in optional_paths:
         if path is not None:
@@ -267,6 +274,15 @@ def load_settings() -> Settings:
         face_insightface_cache_dir=_project_path(
             os.getenv("FACE_INSIGHTFACE_CACHE_DIR", ".cache/insightface")
         ),
+        roboflow_object_cues_enabled=_bool(os.getenv("ROBOFLOW_OBJECT_CUES_ENABLED", "false")),
+        roboflow_object_cue_model_path=_project_path(
+            os.getenv("ROBOFLOW_OBJECT_CUE_MODEL_PATH", "models/object_cues/best.pt")
+        ),
+        roboflow_object_cue_classes=[
+            c.strip()
+            for c in os.getenv("ROBOFLOW_OBJECT_CUE_CLASSES", "id_card,lanyard,visitor_badge,bag,helmet").split(",")
+            if c.strip()
+        ],
     )
     ensure_project_dirs(config)
     return config

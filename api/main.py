@@ -14,6 +14,7 @@ from core.config import ensure_project_dirs, get_runtime_info, settings
 from core.database import Database
 from core.detector import YOLODetector
 from core.face_verification import FaceVerificationService
+from core.object_cue_detection import ObjectCueDetectionService
 from core.security_rules import SecurityRulesEngine, select_highest_security_event
 from core.tracker import PersonTracker
 from core.video_processor import VideoProcessor
@@ -29,6 +30,7 @@ camera: CameraStream | None = None
 video_processor: VideoProcessor | None = None
 security_rules_engine: SecurityRulesEngine | None = None
 face_verification_service: FaceVerificationService | None = None
+object_cue_detection_service: ObjectCueDetectionService | None = None
 
 
 def build_security_rules_engine() -> SecurityRulesEngine:
@@ -67,7 +69,7 @@ def create_security_incident_from_event(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global camera, video_processor, security_rules_engine, face_verification_service
+    global camera, video_processor, security_rules_engine, face_verification_service, object_cue_detection_service
     ensure_project_dirs(settings)
     db.init_db()
     security_rules_engine = build_security_rules_engine()
@@ -80,6 +82,13 @@ async def lifespan(app: FastAPI):
         model_name=settings.face_model_name,
         threshold=settings.face_verification_threshold,
         low_confidence_threshold=settings.face_low_confidence_threshold,
+    )
+    
+    # Object cue detection service
+    object_cue_detection_service = ObjectCueDetectionService(
+        enabled=settings.roboflow_object_cues_enabled,
+        model_path=settings.roboflow_object_cue_model_path,
+        supported_cues=settings.roboflow_object_cue_classes,
     )
 
     camera = CameraStream(
@@ -128,6 +137,7 @@ async def lifespan(app: FastAPI):
         camera = None
     security_rules_engine = None
     face_verification_service = None
+    object_cue_detection_service = None
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -641,3 +651,18 @@ async def face_verify_image(body: dict):
 
     result = face_verification_service.verify_image_path(resolved)
     return JSONResponse(content=result.to_dict())
+
+
+@app.get("/api/object-cues/status")
+async def object_cues_status():
+    """Return status of localized object cue detection service."""
+    if object_cue_detection_service is None:
+        return JSONResponse(content={
+            "enabled": settings.roboflow_object_cues_enabled,
+            "configured": False,
+            "model_path": str(settings.roboflow_object_cue_model_path),
+            "status": "DISABLED",
+            "supported_cues": settings.roboflow_object_cue_classes,
+            "instruction": "Object cue detection service not initialized",
+        })
+    return JSONResponse(content=object_cue_detection_service.get_status())

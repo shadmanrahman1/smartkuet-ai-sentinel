@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 2D Multi-Modal Risk Fusion Engine (branch: milestone-2d-risk-fusion)
+- Current milestone: Milestone 2E Research Evaluation & Competition Presentation Pack (branch: milestone-2e-evaluation-pack)
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack (production/fallback): plain HTML, local CSS, and vanilla JavaScript in `dashboard/`. Routes `/`, `/guard`, `/exam` served directly by FastAPI. Always works offline.
@@ -579,4 +579,15 @@ Successfully designed, scaffolded, integrated, and visually represented the rese
    * Integrated the panel into [GuardView.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/pages/GuardView.jsx) and [SecurityRoom.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/pages/SecurityRoom.jsx) layouts.
    * Verified successful Vite production build (`npm run build` completed successfully, compiling 29 modules in 143ms).
 
+### 2026-06-12 - Milestone 2E Phase 1 Research Evaluation & Competition Presentation Pack
 
+Successfully completed the documentation framework and evaluation protocols for competition staging and academic paper publication.
+
+1. **System Evaluation Protocols**:
+   * Created [docs/evaluation_protocol.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/evaluation_protocol.md) outlining vitals (latency, FPS), API endpoint health metrics, correctness checks (unit tests), dataset mappings (LFW, Roboflow, local benchmarks), and ethical/advisory boundaries.
+
+2. **Presentation Staging & Freeze**:
+   * Created [docs/competition_demo_freeze.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/competition_demo_freeze.md) establishing exact demo stories, landing page and security dashboard check grids, live backend status API routes, presenter script highlights, and claims warnings.
+
+3. **Research Paper Skeleton**:
+   * Created [docs/research_paper_skeleton.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/research_paper_skeleton.md) featuring full abstracts, methodology explanations, and the mathematical formulation of the risk fusion scoring algorithm.

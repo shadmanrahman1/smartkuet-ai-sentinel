@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { fetchSecurityStatus } from '../api/client';
 import { SecurityLevelCard } from '../components/SecurityLevelCard';
 import HumanInLoopBanner from '../components/HumanInLoopBanner';
+import FaceVerificationPanel from '../components/FaceVerificationPanel';
+import ObjectCuesPanel from '../components/ObjectCuesPanel';
+import RiskFusionPanel from '../components/RiskFusionPanel';
 
 const ACTION_HISTORY = [
   { time: '14:22', action: 'ALLOW',     note: 'KUET ID verified', color: 'var(--green)' },
@@ -110,6 +113,9 @@ export default function GuardView() {
           </div>
         </div>
 
+        {/* ── Multi-Modal Risk Fusion ── */}
+        <RiskFusionPanel online={online} />
+
         {/* ── Gate Configuration ── */}
         <div className="grid-3" style={{ marginBottom: 24 }}>
           {[
@@ -142,6 +148,12 @@ export default function GuardView() {
         </div>
 
         <HumanInLoopBanner message="Gate control decisions (ALLOW / VERIFY ID / DENY) are the sole responsibility of the human security guard. AI alerts are advisory inputs only." />
+
+        {/* ── Verification & Object Cue Prototypes ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flexWrap: 'wrap' }}>
+          <FaceVerificationPanel online={online} />
+          <ObjectCuesPanel online={online} />
+        </div>
       </div>
     </div>
   );

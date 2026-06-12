@@ -1,7 +1,7 @@
 import os
 import platform
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Union
 
@@ -77,10 +77,23 @@ class Settings:
     gate_zone_y2: float = 1.00
     # Tracker missed-frames pruning
     max_track_missed_frames: int = 10
+    # Face verification — Milestone 2B
+    face_verification_enabled: bool = False
+    face_gallery_dir: Path = None  # type: ignore[assignment]
+    face_embeddings_cache: Path = None  # type: ignore[assignment]
+    face_verification_threshold: float = 0.40
+    face_low_confidence_threshold: float = 0.30
+    face_model_name: str = "buffalo_s"
+    face_insightface_cache_dir: Path = None  # type: ignore[assignment]
+    # Object Cues — Milestone 2C
+    roboflow_object_cues_enabled: bool = False
+    roboflow_object_cue_model_path: Path = None  # type: ignore[assignment]
+    roboflow_object_cue_classes: list[str] = field(default_factory=list)
 
 
 def ensure_project_dirs(config: Settings) -> None:
-    for path in (
+    # Core required dirs — always present
+    required_paths = (
         config.cache_dir,
         config.cache_dir / "pip",
         config.cache_dir / "pycache",
@@ -97,8 +110,23 @@ def ensure_project_dirs(config: Settings) -> None:
         config.evidence_dir,
         config.sample_video_dir,
         config.database_path.parent,
-    ):
+    )
+    for path in required_paths:
         path.mkdir(parents=True, exist_ok=True)
+
+    # Optional face verification dirs — may be None when Settings built without them
+    optional_paths = [
+        config.face_gallery_dir,
+        config.face_embeddings_cache.parent if config.face_embeddings_cache else None,
+        config.face_insightface_cache_dir,
+        config.runs_dir / "face_verification",
+        config.roboflow_object_cue_model_path.parent if config.roboflow_object_cue_model_path else None,
+        config.data_dir / "roboflow_datasets",
+        config.runs_dir / "object_cues",
+    ]
+    for path in optional_paths:
+        if path is not None:
+            path.mkdir(parents=True, exist_ok=True)
 
     os.environ["PIP_CACHE_DIR"] = str(config.cache_dir / "pip")
     os.environ["PYTHONPYCACHEPREFIX"] = str(config.cache_dir / "pycache")
@@ -229,6 +257,32 @@ def load_settings() -> Settings:
         gate_zone_x2=float(os.getenv("GATE_ZONE_X2", "0.85")),
         gate_zone_y2=float(os.getenv("GATE_ZONE_Y2", "1.00")),
         max_track_missed_frames=max(1, int(os.getenv("MAX_TRACK_MISSED_FRAMES", "10"))),
+        face_verification_enabled=_bool(os.getenv("FACE_VERIFICATION_ENABLED", "false")),
+        face_gallery_dir=_project_path(
+            os.getenv("FACE_GALLERY_DIR", "data/demo_face_gallery")
+        ),
+        face_embeddings_cache=_project_path(
+            os.getenv("FACE_EMBEDDINGS_CACHE", "data/face_embeddings/gallery_embeddings.npy")
+        ),
+        face_verification_threshold=float(
+            os.getenv("FACE_VERIFICATION_THRESHOLD", "0.40")
+        ),
+        face_low_confidence_threshold=float(
+            os.getenv("FACE_LOW_CONFIDENCE_THRESHOLD", "0.30")
+        ),
+        face_model_name=os.getenv("FACE_MODEL_NAME", "buffalo_s"),
+        face_insightface_cache_dir=_project_path(
+            os.getenv("FACE_INSIGHTFACE_CACHE_DIR", ".cache/insightface")
+        ),
+        roboflow_object_cues_enabled=_bool(os.getenv("ROBOFLOW_OBJECT_CUES_ENABLED", "false")),
+        roboflow_object_cue_model_path=_project_path(
+            os.getenv("ROBOFLOW_OBJECT_CUE_MODEL_PATH", "models/object_cues/best.pt")
+        ),
+        roboflow_object_cue_classes=[
+            c.strip()
+            for c in os.getenv("ROBOFLOW_OBJECT_CUE_CLASSES", "id_card,lanyard,visitor_badge,bag,helmet").split(",")
+            if c.strip()
+        ],
     )
     ensure_project_dirs(config)
     return config

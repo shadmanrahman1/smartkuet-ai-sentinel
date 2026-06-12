@@ -6,13 +6,15 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 2A-UI Optional React Showcase Frontend
+- Current milestone: Milestone 2E Research Evaluation & Competition Presentation Pack (branch: milestone-2e-evaluation-pack)
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack (production/fallback): plain HTML, local CSS, and vanilla JavaScript in `dashboard/`. Routes `/`, `/guard`, `/exam` served directly by FastAPI. Always works offline.
 - Frontend stack (optional showcase): Vite + React in `showcase-frontend/`. Runs on port 5173. Uses Vite dev proxy to forward `/api` to FastAPI on port 8002. `node_modules/` and `dist/` are gitignored. No Next.js.
-- Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch.
-- YOLO is now included for object/person detection with runtime diagnostics, evidence capture, person tracking, and deterministic security event rules. No face recognition, InsightFace, MediaPipe, exam behavior scoring, training, or cloud APIs yet.
+- Backend stack: FastAPI, Uvicorn, OpenCV, SQLite, WebSockets, Ultralytics YOLO, Torch, InsightFace.
+- YOLO is included for object/person detection, tracking, and security event rules. InsightFace is included for local face verification vs LFW demo gallery. No MediaPipe, exam behavior scoring, training, or cloud APIs yet.
+- Milestone 2C adds local-only object cue detection scaffolding (ID-card, lanyard, visitor badge, bag, helmet) with supporting security-risk signals.
+
 
 ## Current Implementation
 
@@ -455,3 +457,177 @@ dashboard/                  — plain HTML fallback (always works)
 Next recommended milestone:
 
 - Screenshot capture across all four showcase pages, final PDF/summary assembly, and live presentation practice.
+
+### 2026-06-11 - Milestone 2B Open-Source Face Verification Prototype
+
+Added the first real face verification prototype using InsightFace + LFW open-source data.
+No real KUET data used. Enrolled gallery = LFW academic identities labeled "Demo Member A/B/C".
+
+**Architecture:**
+```
+CCTV frame → InsightFace (RetinaFace detect + ArcFace embed)
+→ cosine similarity vs enrolled gallery embeddings
+→ green (≥0.40) = Known Demo Member
+→ yellow (0.30–0.40) = Low Confidence / Manual Verify
+→ red (<0.30) = Unknown Visitor
+→ Guard makes final gate decision
+```
+
+**Files created:**
+- `docs/open_face_verification_prototype.md` — design doc, dataset roles, privacy framing
+- `core/face_verification.py` — FaceVerificationService, FaceVerificationResult dataclass
+- `scripts/prepare_lfw_demo_gallery.py` — LFW download + gallery image prep + enrollment
+- `tests/test_milestone_2b_face.py` — 21 new tests (mock-safe, no downloads required)
+- `showcase-frontend/src/components/FaceVerificationPanel.jsx` — React UI panel
+
+**Files modified:**
+- `core/config.py` — face verification config fields + ensure_project_dirs guard
+- `api/main.py` — FaceVerificationService in lifespan + /api/face/* routes
+- `.gitignore` — data/face_datasets/*, data/demo_face_gallery/*, data/face_embeddings/*, runs/face_verification/*
+- `requirements.txt` — insightface==1.0.1, onnxruntime==1.26.0, scikit-learn
+- `.env.example` — FACE_* configuration fields
+- `showcase-frontend/src/pages/GuardView.jsx` — FaceVerificationPanel added
+- `showcase-frontend/src/pages/Landing.jsx` — Face Verification feature card added
+
+**New API endpoints:**
+- `GET  /api/face/status` — model loaded, gallery size, threshold
+- `GET  /api/face/demo-members` — enrolled member labels
+- `POST /api/face/verify-image` — cosine similarity result with path traversal protection
+
+**Test results:**
+- pytest: 78 passed, 0 failed (57 prior + 21 new 2B tests)
+- npm run build: ✅ 27 modules, 0 errors, 131ms
+- Smoke test: all 8 endpoints → 200 OK
+- InsightFace buffalo_s: loaded and serving correctly
+
+**Known notes:**
+- InsightFace model auto-downloads to user home `.insightface/` on first run (INSIGHTFACE_HOME env var must be set before module load to redirect). Model works correctly regardless of location.
+- onnxruntime CPU only in test env (CUDA warning suppressed). Production GPU uses PyTorch/YOLO path.
+- Gallery is empty until `python scripts/prepare_lfw_demo_gallery.py` is run (LFW ~200MB download).
+
+**Current milestone:** Milestone 2C Local Object-Cue Detection Scaffold (branch: milestone-2c-object-cues)
+
+Next recommended milestone:
+
+- Milestone 2C Phase 3: Add React Object Cues panel to the optional showcase frontend.
+- Milestone 2D: Risk Fusion Engine combining face status, object cues, tracking, and time rules.
+
+### 2026-06-12 - Milestone 2C Phase 1 & 2 Local Object-Cue Detection Scaffold
+
+Researched open-source Roboflow Universe dataset candidates and implemented a safe, offline, local-only object cue detection scaffold.
+
+1. **Research & Curation**:
+   * Evaluated candidate datasets on Roboflow Universe and documented findings in `docs/roboflow_object_cue_research.md`.
+   * Curated candidates for ID-card, lanyard, name-badge, backpack/bag (pre-trained COCO), helmet (occlusion context), and uniforms/logos.
+   * Defined system safety principles: object cues are supporting evidence only, known/unknown identity checks are handled by InsightFace/LFW, and human guard retains override controls.
+
+2. **Configuration & Paths**:
+   * Added `ROBOFLOW_OBJECT_CUES_ENABLED`, `ROBOFLOW_OBJECT_CUE_MODEL_PATH`, and `ROBOFLOW_OBJECT_CUE_CLASSES` configuration fields in `core/config.py` and `.env.example`.
+   * Updated `ensure_project_dirs` to create `models/object_cues`, `data/roboflow_datasets`, and `runs/object_cues` locally.
+
+3. **Repository Directory Structure**:
+   * Updated `.gitignore` to unignore subdirectories while ignoring wildcards (e.g. weights `*.pt`, datasets `*`, runs `*`).
+   * Created empty `.gitkeep` placeholder files under `models/object_cues/`, `data/roboflow_datasets/`, and `runs/object_cues/` to track directory structures.
+
+4. **Service & APIs**:
+   * Implemented `ObjectCueDetectionService` in `core/object_cue_detection.py` returning `DISABLED`, `MODEL_NOT_CONFIGURED`, or `READY` statuses.
+   * Integrated service in app lifespan context and exposed `GET /api/object-cues/status` in `api/main.py`.
+
+5. **Diagnostics & Tests**:
+   * Updated `scripts/check_runtime.py` to print object cue diagnostics.
+   * Added 5 scaffold tests in `tests/test_milestone_2c_scaffold.py`. All tests passed (83 total passed, 0 failures).
+   * Completed API smoke test verifying 200 OK across `/health`, `/api/runtime/status`, `/api/security/status`, `/api/face/status`, and `/api/object-cues/status`.
+
+6. **React UI Components (Phase 3)**:
+   * Updated the showcase API client `showcase-frontend/src/api/client.js` with `fetchObjectCuesStatus` and `DEMO_OBJECT_CUES` fallback.
+   * Created `ObjectCuesPanel.jsx` component displaying target cues, status badges (`DISABLED`, `MODEL_NOT_CONFIGURED`, `READY`), and the human-in-the-loop safety warning.
+   * Integrated `ObjectCuesPanel` in both `GuardView.jsx` and `SecurityRoom.jsx` layouts.
+   * Verified successful Vite production build (`npm run build` completed successfully, compiling 28 modules).
+
+**Current milestone:** Milestone 2D Multi-Modal Risk Fusion Engine (branch: milestone-2d-risk-fusion)
+
+Next recommended milestone:
+
+- Milestone 2E: Research Evaluation & Competition Presentation Pack (benchmarks, screenshots, demo script, and stable path freeze).
+
+### 2026-06-12 - Milestone 2D Phase 1, 2, & 3 Multi-Modal Risk Fusion Engine & React UI Panel
+
+Successfully designed, scaffolded, integrated, and visually represented the research-grade **Multi-Modal Risk Fusion Engine** for campus gate monitoring at KUET.
+
+1. **Design & Research (Phase 1)**:
+   * Created [docs/risk_fusion_design.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/risk_fusion_design.md) outlining the theoretical framework and campus security scenarios.
+   * Specified scoring logic combining: base face similarity status, camera health availability, time-of-day (after-hours), gate-zone ROI presence, motionless person indicators, and rules engine alerts.
+
+2. **Core Python Engine (Phase 1)**:
+   * Implemented the deterministic, explainable engine in [core/risk_fusion.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/core/risk_fusion.py) with `RiskFusionInput` and `RiskFusionResult` schemas.
+   * Added score mitigations (present lanyards/cards deduct 5 points but are floored to prevent LOW classification) and aggravators (unknown face after-hours score = 90).
+
+3. **FastAPI Route & Integration (Phase 2)**:
+   * Exposed a unified queryable GET `/api/risk-fusion/status` endpoint in [api/main.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/api/main.py).
+   * Aggregated live states: camera status, latest security events, tracking summaries, and face verification results.
+   * Supported complete testing parameter overrides (`face_status`, `camera_available`, `after_hours`, etc.) in the endpoint query string.
+   * Updated `api/main.py` to preserve the outcome of the last on-demand face verification run in a global `latest_face_verification_result` tracker.
+
+4. **Testing & QA (Phase 2)**:
+   * Created unit tests in [tests/test_milestone_2d_api.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_milestone_2d_api.py) validating default endpoints, mitigations, query overrides, and state updates.
+   * Verified that all 95 tests pass successfully (`pytest` completed with 95 passed, 0 failures).
+   * Successfully performed a live uvicorn smoke test on port `8002` verifying all endpoints return 200 and the risk fusion JSON shape matches the research-grade criteria.
+
+5. **React UI Components (Phase 3)**:
+   * Added the `fetchRiskFusionStatus` function to the show-case API client [client.js](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/api/client.js) with mock fallback configuration.
+   * Created [RiskFusionPanel.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/components/RiskFusionPanel.jsx) implementing explainable advisory risk levels (LOW, MEDIUM, HIGH, CRITICAL), recommended actions, reasoning traces, and signal verification status chips (Camera, Face, Object, Tracking, Gate-Zone, Security Rules).
+   * Integrated the panel into [GuardView.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/pages/GuardView.jsx) and [SecurityRoom.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/pages/SecurityRoom.jsx) layouts.
+   * Verified successful Vite production build (`npm run build` completed successfully, compiling 29 modules in 143ms).
+
+### 2026-06-12 - Milestone 2E Phase 1 Research Evaluation & Competition Presentation Pack
+
+Successfully completed the documentation framework and evaluation protocols for competition staging and academic paper publication.
+
+1. **System Evaluation Protocols**:
+   * Created [docs/evaluation_protocol.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/evaluation_protocol.md) outlining vitals (latency, FPS), API endpoint health metrics, correctness checks (unit tests), dataset mappings (LFW, Roboflow, local benchmarks), and ethical/advisory boundaries.
+
+2. **Presentation Staging & Freeze**:
+   * Created [docs/competition_demo_freeze.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/competition_demo_freeze.md) establishing exact demo stories, landing page and security dashboard check grids, live backend status API routes, presenter script highlights, and claims warnings.
+
+3. **Research Paper Skeleton**:
+   * Created [docs/research_paper_skeleton.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/research_paper_skeleton.md) featuring full abstracts, methodology explanations, and the mathematical formulation of the risk fusion scoring algorithm.
+
+### 2026-06-12 - Milestone 2E Phase 2 Actual Validation Snapshot & Performance Freeze
+
+Generated a measured validation snapshot of the current system without adding new features, ensuring the project is ready for evaluation and presentation.
+
+1. **System Vitals & Tests Verification**:
+   * Verified that all 95 tests pass successfully.
+   * Confirmed runtime diagnostics on the local machine: Python 3.13.5, Torch 2.11.0 with CUDA available (NVIDIA GeForce RTX 3050 Laptop GPU, CUDA 12.8), and YOLO model exists.
+   * Confirmed Vite production build success for the React showcase frontend.
+
+2. **API Smoke Tests**:
+   * Performed a complete smoke test on all status endpoints, including query override parameters for the multi-modal risk fusion engine, logging risk scores, levels, recommended actions, and advisory notes.
+
+3. **Performance Benchmarking**:
+   * Executed the video validation script `validate_demo_video.py` using `sample_videos/demo.mp4`.
+   * Measured a local processing speed of **98.5 FPS** (average YOLO inference of **11.22 ms**).
+   * Verified security rules and tracks tracking: processed 199 frames, logged 124 security events, and recorded 39 tracks.
+
+4. **Claim Boundaries & Freeze Documentation**:
+   * Created [docs/validation_snapshot_2e.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/validation_snapshot_2e.md) detailing exact verified performance, limits, and allowed/disallowed competition claims.
+   * Confirmed zero untracked runtime artifacts in git tracking.
+
+### 2026-06-12 - Milestone 2E Phase 3 Presentation Polish Pack
+
+Completed the final presentation, script, and support documentation freeze to prepare the system for evaluation.
+
+1. **Demo Script Formulation**:
+   * Created [docs/final_demo_script_2e.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/final_demo_script_2e.md) detailing a 30-second pitch, a 2-minute live demo run, and a 5-minute extended system logic overview.
+   * Defined strict terminology guidelines to prevent overclaiming and outline how to address critical judge questions.
+
+2. **Screenshot Checklist**:
+   * Created [docs/screenshot_checklist_2e.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/screenshot_checklist_2e.md) with standardized snake_case file names for UI dashboards and uvicorn API routes.
+
+3. **Judges Q&A Deck**:
+   * Created [docs/judges_qna_2e.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/judges_qna_2e.md) compiling anticipated technical, structural, and ethical questions (including offline safety, privacy, and research value).
+
+4. **Project Landing Docs Update**:
+   * Updated repository [README.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/README.md) subtitle to Milestone 2E and added a current status freeze summary including features lists and privacy disclaimers.
+
+

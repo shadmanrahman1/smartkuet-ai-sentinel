@@ -37,3 +37,26 @@ sample_videos/*
 showcase-frontend/node_modules/
 showcase-frontend/dist/
 showcase-frontend/.vite/
+
+# Face verification — Milestone 2B (datasets, embeddings, gallery images, model cache)
+data/face_datasets/*
+!data/face_datasets/.gitkeep
+data/demo_face_gallery/*
+!data/demo_face_gallery/.gitkeep
+data/face_embeddings/*
+!data/face_embeddings/.gitkeep
+runs/face_verification/*
+!runs/face_verification/.gitkeep
+
+# Object cues — Milestone 2C
+!models/object_cues/
+models/object_cues/*
+!models/object_cues/.gitkeep
+
+!data/roboflow_datasets/
+data/roboflow_datasets/*
+!data/roboflow_datasets/.gitkeep
+
+!runs/object_cues/
+runs/object_cues/*
+!runs/object_cues/.gitkeep

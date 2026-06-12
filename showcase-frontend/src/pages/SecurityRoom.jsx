@@ -4,6 +4,8 @@ import MjpegFeed from '../components/MjpegFeed';
 import TrackingPanel from '../components/TrackingPanel';
 import { LevelBadge } from '../components/SecurityLevelCard';
 import HumanInLoopBanner from '../components/HumanInLoopBanner';
+import ObjectCuesPanel from '../components/ObjectCuesPanel';
+import RiskFusionPanel from '../components/RiskFusionPanel';
 
 const EVENT_TYPE_LABELS = {
   NORMAL_ACTIVITY:       { icon: '✅', label: 'Normal Activity' },
@@ -81,6 +83,9 @@ export default function SecurityRoom() {
           <TrackingPanel tracking={tracking} online={online} />
         </div>
 
+        {/* ── Multi-Modal Risk Fusion ── */}
+        <RiskFusionPanel online={online} />
+
         {/* ── Security Status ── */}
         <div className="grid-3" style={{ marginBottom: 24 }}>
           {/* Current Level */}
@@ -155,7 +160,11 @@ export default function SecurityRoom() {
           </div>
         )}
 
-        <HumanInLoopBanner />
+        <ObjectCuesPanel online={online} />
+
+        <div style={{ marginTop: 24 }}>
+          <HumanInLoopBanner />
+        </div>
       </div>
     </div>
   );

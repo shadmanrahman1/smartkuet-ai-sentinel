@@ -548,11 +548,11 @@ Researched open-source Roboflow Universe dataset candidates and implemented a sa
 
 Next recommended milestone:
 
-- Milestone 2D Phase 3: Connect risk fusion output to optional React showcase frontend.
+- Milestone 2E: Research Evaluation & Competition Presentation Pack (benchmarks, screenshots, demo script, and stable path freeze).
 
-### 2026-06-12 - Milestone 2D Phase 1 & 2 Multi-Modal Risk Fusion Engine & API Integration
+### 2026-06-12 - Milestone 2D Phase 1, 2, & 3 Multi-Modal Risk Fusion Engine & React UI Panel
 
-Successfully designed, scaffolded, and integrated the research-grade **Multi-Modal Risk Fusion Engine** for campus gate monitoring at KUET.
+Successfully designed, scaffolded, integrated, and visually represented the research-grade **Multi-Modal Risk Fusion Engine** for campus gate monitoring at KUET.
 
 1. **Design & Research (Phase 1)**:
    * Created [docs/risk_fusion_design.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/risk_fusion_design.md) outlining the theoretical framework and campus security scenarios.
@@ -572,4 +572,11 @@ Successfully designed, scaffolded, and integrated the research-grade **Multi-Mod
    * Created unit tests in [tests/test_milestone_2d_api.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_milestone_2d_api.py) validating default endpoints, mitigations, query overrides, and state updates.
    * Verified that all 95 tests pass successfully (`pytest` completed with 95 passed, 0 failures).
    * Successfully performed a live uvicorn smoke test on port `8002` verifying all endpoints return 200 and the risk fusion JSON shape matches the research-grade criteria.
+
+5. **React UI Components (Phase 3)**:
+   * Added the `fetchRiskFusionStatus` function to the show-case API client [client.js](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/api/client.js) with mock fallback configuration.
+   * Created [RiskFusionPanel.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/components/RiskFusionPanel.jsx) implementing explainable advisory risk levels (LOW, MEDIUM, HIGH, CRITICAL), recommended actions, reasoning traces, and signal verification status chips (Camera, Face, Object, Tracking, Gate-Zone, Security Rules).
+   * Integrated the panel into [GuardView.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/pages/GuardView.jsx) and [SecurityRoom.jsx](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/showcase-frontend/src/pages/SecurityRoom.jsx) layouts.
+   * Verified successful Vite production build (`npm run build` completed successfully, compiling 29 modules in 143ms).
+
 

@@ -18,6 +18,7 @@ from core.object_cue_detection import ObjectCueDetectionService
 from core.security_rules import SecurityRulesEngine, select_highest_security_event
 from core.tracker import PersonTracker
 from core.video_processor import VideoProcessor
+from core.risk_fusion import RiskFusionInput, evaluate_risk
 from workers.exam_worker import mock_exam_events
 from workers.security_worker import mock_security_events
 
@@ -31,6 +32,7 @@ video_processor: VideoProcessor | None = None
 security_rules_engine: SecurityRulesEngine | None = None
 face_verification_service: FaceVerificationService | None = None
 object_cue_detection_service: ObjectCueDetectionService | None = None
+latest_face_verification_result = None
 
 
 def build_security_rules_engine() -> SecurityRulesEngine:
@@ -649,7 +651,9 @@ async def face_verify_image(body: dict):
     except Exception:
         return JSONResponse(status_code=400, content={"error": "Invalid path"})
 
+    global latest_face_verification_result
     result = face_verification_service.verify_image_path(resolved)
+    latest_face_verification_result = result
     return JSONResponse(content=result.to_dict())
 
 
@@ -666,3 +670,113 @@ async def object_cues_status():
             "instruction": "Object cue detection service not initialized",
         })
     return JSONResponse(content=object_cue_detection_service.get_status())
+
+
+@app.get("/api/risk-fusion/status")
+async def risk_fusion_status(
+    face_status: str | None = None,
+    after_hours: bool | None = None,
+    camera_available: bool | None = None,
+    motionless_person: bool | None = None,
+    active_tracks_in_gate_zone: int | None = None,
+    object_cues_detected: str | None = None,
+    security_level: str | None = None,
+    security_event_type: str | None = None,
+):
+    """
+    Exposes multi-modal risk fusion assessment by reading live states
+    with optional testing overrides.
+    """
+    # 1. Determine camera availability
+    if camera_available is None:
+        camera_available = bool(camera_status().get("is_opened", False))
+
+    # 2. Determine security level and event type
+    sec_status = security_status()
+    if security_level is None:
+        security_level = sec_status.get("latest_level", "green")
+    if security_event_type is None:
+        security_event_type = sec_status.get("latest_event_type", "NORMAL_ACTIVITY")
+
+    # If camera is available, CAMERA_UNAVAILABLE event should not override security level
+    if camera_available and security_event_type == "CAMERA_UNAVAILABLE":
+        security_event_type = "NORMAL_ACTIVITY"
+        if security_level == "red":
+            security_level = "green"
+
+    # 3. Determine active tracks and gate zone presence
+    tracking = tracking_summary()
+    active_tracks = tracking.get("active_tracks") or []
+    
+    if active_tracks_in_gate_zone is None:
+        if security_rules_engine is not None and security_rules_engine.gate_zone_enabled:
+            active_tracks_in_gate_zone = sum(
+                1 for t in active_tracks if security_rules_engine._track_in_gate_zone(t)
+            )
+        else:
+            active_tracks_in_gate_zone = len(active_tracks)
+
+    if motionless_person is None:
+        motionless_person = any(
+            float(t.get("age_seconds", 0.0)) >= 60.0
+            for t in active_tracks
+        )
+
+    # 4. Determine after hours flag
+    if after_hours is None:
+        if security_rules_engine is not None:
+            after_hours = security_rules_engine._is_after_hours(datetime.now().astimezone())
+        else:
+            after_hours = False
+
+    # 5. Determine face status
+    if face_status is None:
+        if latest_face_verification_result is not None:
+            status_val = latest_face_verification_result.status
+            if status_val == "VERIFIED_KNOWN_MEMBER":
+                face_status = "KNOWN"
+            elif status_val == "LOW_CONFIDENCE":
+                face_status = "LOW_CONFIDENCE"
+            elif status_val == "UNKNOWN_VISITOR":
+                face_status = "UNKNOWN"
+            else:
+                face_status = "NOT_AVAILABLE"
+        else:
+            face_status = "NOT_AVAILABLE"
+
+    # 6. Determine object cue status and detected cues
+    obj_status_dict = {}
+    if object_cue_detection_service is not None:
+        obj_status_dict = object_cue_detection_service.get_status()
+    object_cue_status = obj_status_dict.get("status", "DISABLED")
+
+    if object_cues_detected is None:
+        cues_list = []
+    else:
+        cues_list = [c.strip() for c in object_cues_detected.split(",") if c.strip()]
+
+    # 7. Evaluate risk
+    inputs = RiskFusionInput(
+        security_level=security_level,
+        security_event_type=security_event_type,
+        active_tracks=len(active_tracks),
+        active_tracks_in_gate_zone=active_tracks_in_gate_zone,
+        face_status=face_status,
+        object_cue_status=object_cue_status,
+        object_cues_detected=cues_list,
+        after_hours=after_hours,
+        camera_available=camera_available,
+        motionless_person=motionless_person,
+        human_review_required=True,
+    )
+
+    result = evaluate_risk(inputs)
+
+    return {
+        "level": result.level,
+        "score": result.score,
+        "reasons": result.reasons,
+        "recommended_action": result.recommended_action,
+        "human_review_required": result.human_review_required,
+        "privacy_note": result.privacy_note,
+    }

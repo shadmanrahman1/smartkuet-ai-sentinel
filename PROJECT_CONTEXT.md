@@ -6,7 +6,7 @@ This file is the running Codex work log for this project. Each time Codex works 
 
 - Project folder: `F:\Skill_WORK\CODE\SMART_KUET_Innovative`
 - Project name: SmartKUET Sentinel
-- Current milestone: Milestone 2C Local Object-Cue Detection Scaffold (branch: milestone-2c-object-cues)
+- Current milestone: Milestone 2D Multi-Modal Risk Fusion Engine (branch: milestone-2d-risk-fusion)
 - Runtime target: local/offline deployment from the project drive
 - Important constraint: keep project runtime files, cache, virtual environment, database, snapshots, and sample videos inside this project folder/local drive. Avoid using `C:` for project configuration or runtime artifacts.
 - Frontend stack (production/fallback): plain HTML, local CSS, and vanilla JavaScript in `dashboard/`. Routes `/`, `/guard`, `/exam` served directly by FastAPI. Always works offline.
@@ -544,8 +544,32 @@ Researched open-source Roboflow Universe dataset candidates and implemented a sa
    * Integrated `ObjectCuesPanel` in both `GuardView.jsx` and `SecurityRoom.jsx` layouts.
    * Verified successful Vite production build (`npm run build` completed successfully, compiling 28 modules).
 
-**Current milestone:** Milestone 2C Local Object-Cue Detection Scaffold & Showcase UI (branch: milestone-2c-object-cues)
+**Current milestone:** Milestone 2D Multi-Modal Risk Fusion Engine (branch: milestone-2d-risk-fusion)
 
 Next recommended milestone:
 
-- Milestone 2D: Risk Fusion Engine combining face status, object cues, tracking, and time rules.
+- Milestone 2D Phase 3: Connect risk fusion output to optional React showcase frontend.
+
+### 2026-06-12 - Milestone 2D Phase 1 & 2 Multi-Modal Risk Fusion Engine & API Integration
+
+Successfully designed, scaffolded, and integrated the research-grade **Multi-Modal Risk Fusion Engine** for campus gate monitoring at KUET.
+
+1. **Design & Research (Phase 1)**:
+   * Created [docs/risk_fusion_design.md](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/docs/risk_fusion_design.md) outlining the theoretical framework and campus security scenarios.
+   * Specified scoring logic combining: base face similarity status, camera health availability, time-of-day (after-hours), gate-zone ROI presence, motionless person indicators, and rules engine alerts.
+
+2. **Core Python Engine (Phase 1)**:
+   * Implemented the deterministic, explainable engine in [core/risk_fusion.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/core/risk_fusion.py) with `RiskFusionInput` and `RiskFusionResult` schemas.
+   * Added score mitigations (present lanyards/cards deduct 5 points but are floored to prevent LOW classification) and aggravators (unknown face after-hours score = 90).
+
+3. **FastAPI Route & Integration (Phase 2)**:
+   * Exposed a unified queryable GET `/api/risk-fusion/status` endpoint in [api/main.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/api/main.py).
+   * Aggregated live states: camera status, latest security events, tracking summaries, and face verification results.
+   * Supported complete testing parameter overrides (`face_status`, `camera_available`, `after_hours`, etc.) in the endpoint query string.
+   * Updated `api/main.py` to preserve the outcome of the last on-demand face verification run in a global `latest_face_verification_result` tracker.
+
+4. **Testing & QA (Phase 2)**:
+   * Created unit tests in [tests/test_milestone_2d_api.py](file:///F:/Skill_WORK/CODE/SMART_KUET_Innovative/tests/test_milestone_2d_api.py) validating default endpoints, mitigations, query overrides, and state updates.
+   * Verified that all 95 tests pass successfully (`pytest` completed with 95 passed, 0 failures).
+   * Successfully performed a live uvicorn smoke test on port `8002` verifying all endpoints return 200 and the risk fusion JSON shape matches the research-grade criteria.
+

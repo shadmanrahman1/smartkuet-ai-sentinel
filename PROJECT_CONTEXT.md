@@ -538,3 +538,14 @@ Researched open-source Roboflow Universe dataset candidates and implemented a sa
    * Added 5 scaffold tests in `tests/test_milestone_2c_scaffold.py`. All tests passed (83 total passed, 0 failures).
    * Completed API smoke test verifying 200 OK across `/health`, `/api/runtime/status`, `/api/security/status`, `/api/face/status`, and `/api/object-cues/status`.
 
+6. **React UI Components (Phase 3)**:
+   * Updated the showcase API client `showcase-frontend/src/api/client.js` with `fetchObjectCuesStatus` and `DEMO_OBJECT_CUES` fallback.
+   * Created `ObjectCuesPanel.jsx` component displaying target cues, status badges (`DISABLED`, `MODEL_NOT_CONFIGURED`, `READY`), and the human-in-the-loop safety warning.
+   * Integrated `ObjectCuesPanel` in both `GuardView.jsx` and `SecurityRoom.jsx` layouts.
+   * Verified successful Vite production build (`npm run build` completed successfully, compiling 28 modules).
+
+**Current milestone:** Milestone 2C Local Object-Cue Detection Scaffold & Showcase UI (branch: milestone-2c-object-cues)
+
+Next recommended milestone:
+
+- Milestone 2D: Risk Fusion Engine combining face status, object cues, tracking, and time rules.

@@ -78,4 +78,17 @@ export async function fetchTrackingLatest() {
   return safeFetch('/api/tracking/latest', DEMO_TRACKING);
 }
 
+export const DEMO_OBJECT_CUES = {
+  enabled: false,
+  configured: false,
+  model_path: 'models/object_cues/best.pt',
+  status: 'DISABLED',
+  supported_cues: ['id_card', 'lanyard', 'visitor_badge', 'bag', 'helmet'],
+  instruction: 'Object cue detection is disabled. Enable in config/env.',
+};
+
+export async function fetchObjectCuesStatus() {
+  return safeFetch('/api/object-cues/status', DEMO_OBJECT_CUES);
+}
+
 export const VIDEO_FEED_URL = 'http://127.0.0.1:8002/api/video_feed';

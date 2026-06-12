@@ -3,6 +3,7 @@ import { fetchSecurityStatus } from '../api/client';
 import { SecurityLevelCard } from '../components/SecurityLevelCard';
 import HumanInLoopBanner from '../components/HumanInLoopBanner';
 import FaceVerificationPanel from '../components/FaceVerificationPanel';
+import ObjectCuesPanel from '../components/ObjectCuesPanel';
 
 const ACTION_HISTORY = [
   { time: '14:22', action: 'ALLOW',     note: 'KUET ID verified', color: 'var(--green)' },
@@ -144,8 +145,11 @@ export default function GuardView() {
 
         <HumanInLoopBanner message="Gate control decisions (ALLOW / VERIFY ID / DENY) are the sole responsibility of the human security guard. AI alerts are advisory inputs only." />
 
-        {/* ── Face Verification Prototype ── */}
-        <FaceVerificationPanel online={online} />
+        {/* ── Verification & Object Cue Prototypes ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flexWrap: 'wrap' }}>
+          <FaceVerificationPanel online={online} />
+          <ObjectCuesPanel online={online} />
+        </div>
       </div>
     </div>
   );
